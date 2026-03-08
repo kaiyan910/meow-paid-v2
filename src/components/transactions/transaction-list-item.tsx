@@ -5,8 +5,10 @@
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronDown, Loader2, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import type { ProfileRow, TransactionWithDetails } from "@/types/database";
 
@@ -23,8 +25,10 @@ function TransactionListItem({
   onDelete,
   isDeleting,
 }: TransactionListItemProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const shop = transaction.shops;
   const items = transaction.transaction_items;
@@ -130,7 +134,7 @@ function TransactionListItem({
               disabled={isDeleting}
               onClick={(e) => {
                 e.stopPropagation();
-                onDelete(transaction.id);
+                setConfirmOpen(true);
               }}
             >
               {isDeleting ? (
@@ -142,6 +146,12 @@ function TransactionListItem({
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={t("common.deleteConfirm")}
+        onConfirm={() => onDelete(transaction.id)}
+      />
     </li>
   );
 }

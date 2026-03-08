@@ -1,4 +1,9 @@
 {
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "deleteConfirm": "Are you sure you want to delete this item?"
+  },
   "app": {
     "title": "MeowPaid",
     "footer": "© 2026 MeowPaid v2.0"

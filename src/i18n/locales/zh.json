@@ -1,4 +1,9 @@
 {
+  "common": {
+    "cancel": "取消",
+    "confirm": "確認",
+    "deleteConfirm": "確定要刪除此項目嗎？"
+  },
   "app": {
     "title": "喵俾",
     "footer": "© 2026 喵俾 v2.0"
