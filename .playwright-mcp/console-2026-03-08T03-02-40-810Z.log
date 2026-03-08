@@ -1,0 +1,20 @@
+[   51025ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5173/node_modules/.vite/deps/radix-ui.js?v=e265b3d0:3250
+[   51026ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5173/node_modules/.vite/deps/radix-ui.js?v=e265b3d0:3250
+[  742028ms] [ERROR] %o
+
+%s
+
+%s
+ ReferenceError: handleOpenChange is not defined
+    at CalculatorDialog (http://localhost:5173/src/components/transactions/calculator-dialog.tsx?t=1772939702734:106:5)
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=e265b3d0:18509:20)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=e265b3d0:5654:24)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=e265b3d0:7475:21)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=e265b3d0:8525:20)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=e265b3d0:997:72)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=e265b3d0:12561:98)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=e265b3d0:12424:43)
+    at renderRootSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=e265b3d0:12408:13)
+    at performWorkOnRoot (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=e265b3d0:11827:37) The above error occurred in the <CalculatorDialog> component. React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl. @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=e265b3d0:7000
+[  742028ms] [WARNING] Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute! @ http://localhost:5173/node_modules/.vite/deps/@tanstack_react-router.js?v=e265b3d0:6283
+[  742028ms] [WARNING] Warning: handleOpenChange is not defined @ http://localhost:5173/node_modules/.vite/deps/@tanstack_react-router.js?v=e265b3d0:6283

@@ -1,0 +1,15 @@
+[   17601ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ https://qszazljqochzjhmweuqg.supabase.co/auth/v1/token?grant_type=password:0
+[  121416ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5173/node_modules/.vite/deps/radix-ui.js?v=6a24f867:3250
+[  121417ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5173/node_modules/.vite/deps/radix-ui.js?v=6a24f867:3250
+[  275440ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5173/node_modules/.vite/deps/radix-ui.js?v=6a24f867:3250
+[  275440ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5173/node_modules/.vite/deps/radix-ui.js?v=6a24f867:3250
+[  330439ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5173/node_modules/.vite/deps/radix-ui.js?v=6a24f867:3250
+[  330441ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5173/node_modules/.vite/deps/radix-ui.js?v=6a24f867:3250
+[  341938ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5173/node_modules/.vite/deps/radix-ui.js?v=6a24f867:3250
+[  341940ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5173/node_modules/.vite/deps/radix-ui.js?v=6a24f867:3250
+[  343982ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5173/node_modules/.vite/deps/radix-ui.js?v=6a24f867:3250
+[  343984ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5173/node_modules/.vite/deps/radix-ui.js?v=6a24f867:3250
+[  346005ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5173/node_modules/.vite/deps/radix-ui.js?v=6a24f867:3250
+[  346007ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5173/node_modules/.vite/deps/radix-ui.js?v=6a24f867:3250
+[  350258ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5173/node_modules/.vite/deps/radix-ui.js?v=6a24f867:3250
+[  350260ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ http://localhost:5173/node_modules/.vite/deps/radix-ui.js?v=6a24f867:3250

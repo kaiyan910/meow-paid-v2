@@ -1,0 +1,128 @@
+{
+  "app": {
+    "title": "喵俾",
+    "footer": "© 2026 喵俾 v2.0"
+  },
+  "login": {
+    "title": "系統登入",
+    "description": "請輸入您的憑證以繼續",
+    "email": {
+      "label": "電子郵件",
+      "placeholder": "輸入電子郵件地址",
+      "invalid": "請輸入有效的電子郵件地址"
+    },
+    "password": {
+      "label": "密碼",
+      "placeholder": "輸入密碼",
+      "minLength": "密碼必須至少 6 個字元"
+    },
+    "submit": "進入系統",
+    "submitting": "登入中...",
+    "notice": "[ 僅限授權人員 ]",
+    "error": "電子郵件或密碼無效，請重試。"
+  },
+  "main": {
+    "title": "喵俾",
+    "loggedInAs": "已登入：{{email}}",
+    "add": "新增",
+    "nav": {
+      "transactions": "交易紀錄",
+      "statistics": "統計",
+      "meta": "設定",
+      "transfer": "分帳"
+    }
+  },
+  "transactions": {
+    "heading": "交易紀錄",
+    "total": "合計",
+    "prevMonth": "上個月",
+    "nextMonth": "下個月",
+    "empty": "本月暫無交易紀錄",
+    "deleteConfirm": "確定要刪除此交易？",
+    "form": {
+      "title": "新增交易",
+      "transactionDate": "交易日期",
+      "transactionDatePlaceholder": "選擇日期",
+      "transactionDateRequired": "交易日期為必填",
+      "shop": "商店",
+      "shopPlaceholder": "搜尋商店...",
+      "shopRequired": "商店為必填",
+      "payee": "付款人",
+      "payeePlaceholder": "選擇付款人",
+      "payeeRequired": "付款人為必填",
+      "paymentDetails": "付款明細",
+      "paymentSubtype": "付款子類型",
+      "paymentSubtypePlaceholder": "選擇子類型",
+      "paymentSubtypeRequired": "付款子類型為必填",
+      "price": "金額",
+      "pricePlaceholder": "0.00",
+      "priceRequired": "金額必須為正數",
+      "addItem": "新增項目",
+      "removeItem": "移除",
+      "atLeastOneItem": "至少需要一個付款項目",
+      "remark": "備註",
+      "remarkPlaceholder": "輸入備註（最多 100 字）",
+      "remarkRequired": "備註為必填",
+      "remarkMaxLength": "備註不能超過 100 個字元",
+      "totalPrice": "合計",
+      "editTitle": "編輯交易",
+      "save": "儲存",
+      "submit": "建立交易",
+      "submitting": "建立中...",
+      "cancel": "取消",
+      "calculator": "計算機",
+      "calculatorConfirm": "確定"
+    }
+  },
+  "statistics": {
+    "heading": "統計",
+    "totalExpenses": "總支出",
+    "categoryBreakdown": "分類明細",
+    "thisMonth": "本月",
+    "lastSixMonths": "近六個月",
+    "paymentType": "付款類型",
+    "paymentSubtype": "付款子類型",
+    "total": "全部",
+    "all": "全部",
+    "average": "六個月平均",
+    "noData": "本月暫無交易紀錄"
+  },
+  "meta": {
+    "tabs": {
+      "shop": "商店",
+      "shopCategory": "商店分類",
+      "paymentType": "付款類型",
+      "paymentSubtype": "付款子類型"
+    },
+    "create": "新增",
+    "edit": "編輯",
+    "delete": "刪除",
+    "empty": "暫無資料",
+    "language": "語言",
+    "logout": "登出",
+    "form": {
+      "name": "名稱",
+      "namePlaceholder": "輸入名稱",
+      "nameRequired": "名稱為必填",
+      "shopCategory": "商店分類",
+      "shopCategoryPlaceholder": "選擇商店分類",
+      "logo": "標誌",
+      "logoPlaceholder": "選擇標誌圖片",
+      "logoRequired": "標誌為必填",
+      "shopCategoryRequired": "商店分類為必填",
+      "paymentType": "付款類型",
+      "paymentTypePlaceholder": "選擇付款類型",
+      "paymentTypeRequired": "付款類型為必填",
+      "save": "儲存",
+      "cancel": "取消"
+    }
+  },
+  "transfer": {
+    "heading": "分帳",
+    "totalExpense": "總支出",
+    "averageCost": "人均費用",
+    "paid": "已付",
+    "owes": "應付",
+    "empty": "本月暫無資料"
+  }
+}

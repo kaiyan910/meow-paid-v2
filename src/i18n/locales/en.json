@@ -1,0 +1,128 @@
+{
+  "app": {
+    "title": "MeowPaid",
+    "footer": "© 2026 MeowPaid v2.0"
+  },
+  "login": {
+    "title": "System Login",
+    "description": "Enter your credentials to continue",
+    "email": {
+      "label": "Email",
+      "placeholder": "Enter email address",
+      "invalid": "Please enter a valid email address"
+    },
+    "password": {
+      "label": "Password",
+      "placeholder": "Enter password",
+      "minLength": "Password must be at least 6 characters"
+    },
+    "submit": "Access System",
+    "submitting": "Accessing...",
+    "notice": "[ Authorized personnel only ]",
+    "error": "Invalid email or password. Please try again."
+  },
+  "main": {
+    "title": "MeowPaid",
+    "loggedInAs": "Logged in as: {{email}}",
+    "add": "Add",
+    "nav": {
+      "transactions": "Transactions",
+      "statistics": "Statistics",
+      "meta": "Meta",
+      "transfer": "Transfer"
+    }
+  },
+  "transactions": {
+    "heading": "Transactions",
+    "total": "Total",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "empty": "No transactions this month",
+    "deleteConfirm": "Delete this transaction?",
+    "form": {
+      "title": "New Transaction",
+      "transactionDate": "Transaction Date",
+      "transactionDatePlaceholder": "Select a date",
+      "transactionDateRequired": "Transaction date is required",
+      "shop": "Shop",
+      "shopPlaceholder": "Search for a shop...",
+      "shopRequired": "Shop is required",
+      "payee": "Payee",
+      "payeePlaceholder": "Select payee",
+      "payeeRequired": "Payee is required",
+      "paymentDetails": "Payment Details",
+      "paymentSubtype": "Payment Subtype",
+      "paymentSubtypePlaceholder": "Select subtype",
+      "paymentSubtypeRequired": "Payment subtype is required",
+      "price": "Price",
+      "pricePlaceholder": "0.00",
+      "priceRequired": "Price must be a positive number",
+      "addItem": "Add Item",
+      "removeItem": "Remove",
+      "atLeastOneItem": "At least one payment item is required",
+      "remark": "Remark",
+      "remarkPlaceholder": "Enter remark (max 100 chars)",
+      "remarkRequired": "Remark is required",
+      "remarkMaxLength": "Remark cannot exceed 100 characters",
+      "totalPrice": "Total",
+      "editTitle": "Edit Transaction",
+      "save": "Save",
+      "submit": "Create Transaction",
+      "submitting": "Creating...",
+      "cancel": "Cancel",
+      "calculator": "Calculator",
+      "calculatorConfirm": "OK"
+    }
+  },
+  "statistics": {
+    "heading": "Statistics",
+    "totalExpenses": "Total Expenses",
+    "categoryBreakdown": "Category Breakdown",
+    "thisMonth": "This Month",
+    "lastSixMonths": "Last 6 Months",
+    "paymentType": "Payment Type",
+    "paymentSubtype": "Payment Subtype",
+    "total": "Total",
+    "all": "All",
+    "average": "6-Month Average",
+    "noData": "No transactions this month"
+  },
+  "meta": {
+    "tabs": {
+      "shop": "Shop",
+      "shopCategory": "Shop Category",
+      "paymentType": "Payment Type",
+      "paymentSubtype": "Payment Subtype"
+    },
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "empty": "No items found",
+    "language": "Language",
+    "logout": "Logout",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Enter name",
+      "nameRequired": "Name is required",
+      "shopCategory": "Shop Category",
+      "shopCategoryPlaceholder": "Select shop category",
+      "logo": "Logo",
+      "logoPlaceholder": "Select logo image",
+      "logoRequired": "Logo is required",
+      "shopCategoryRequired": "Shop category is required",
+      "paymentType": "Payment Type",
+      "paymentTypePlaceholder": "Select payment type",
+      "paymentTypeRequired": "Payment type is required",
+      "save": "Save",
+      "cancel": "Cancel"
+    }
+  },
+  "transfer": {
+    "heading": "Transfer",
+    "totalExpense": "Total Expense",
+    "averageCost": "Average / Person",
+    "paid": "Paid",
+    "owes": "Owes",
+    "empty": "No data this month"
+  }
+}
