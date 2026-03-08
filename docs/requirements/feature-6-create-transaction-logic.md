@@ -103,20 +103,21 @@
 ## Revision 3 
 
 ### Trnasacation List Item
-
 - add a `edit` button to each list item to allow user to modify the transaction
 
 ### Create Transaction Page
-
 - payment details `price` field should only allow to input double with 1 decimal point value current it allow 2 decimal points
 
 #### Calculator Function
-
 - the calculator should bring the payment detials `price` to the dialog initial value
   - currently when I input say `60` into the `price` field and press the `calculator` button it does not bring `60` to the `calculator`
 
 ## Revision 4
 
 ### Transaction List Page
-
 - when user pressed on the `current month` it should provide a drop down to allow user fast navigate to different year and month
+
+## Revision 5
+
+### Trnasacation List Item
+- the transaction date should be in format of DD/MM (e.g. 01/03 means 01 March) 

@@ -33,7 +33,9 @@ function TransactionListItem({
   const shop = transaction.shops;
   const items = transaction.transaction_items;
   const date = new Date(transaction.transaction_date);
-  const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const dateStr = `${day}/${month}`;
 
   return (
     <li className="rounded-sm border-2 border-border shadow-[2px_2px_0px_0px] shadow-border/40 transition-colors hover:border-primary/60">
