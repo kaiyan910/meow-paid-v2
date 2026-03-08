@@ -66,28 +66,14 @@ function LastSixMonthsStats() {
     filterSubtypeId,
   );
 
-  /* Build all 6 months and merge with API data so the x-axis always shows all months. */
+  /* Map API data to chart format. The hook already returns all 6 months. */
   const chartData = useMemo(() => {
-    const months: Array<{ month: string; total: number }> = [];
-    for (let i = 5; i >= 0; i--) {
-      months.push({
-        month: currentMonth.clone().subtract(i, "months").format("MMM"),
-        total: 0,
-      });
-    }
-    if (totals) {
-      const lookup = new Map(
-        totals.map((row) => [
-          moment(row.month_start).format("MMM"),
-          Math.round(row.total * 10) / 10,
-        ]),
-      );
-      for (const entry of months) {
-        entry.total = lookup.get(entry.month) ?? 0;
-      }
-    }
-    return months;
-  }, [totals, currentMonth]);
+    if (!totals) return [];
+    return totals.map((row) => ({
+      month: row.label,
+      total: row.total,
+    }));
+  }, [totals]);
 
   /* Check if there is any data across all 6 months. */
   const hasData = useMemo(
