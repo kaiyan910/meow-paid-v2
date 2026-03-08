@@ -62,3 +62,10 @@
 ### Shop Form
 - show the logo on the list item
 - refer the `docs/bugs/B01-layout-gitch.png` fix the UI problem on the Shop Edit Form
+
+## Revision 4
+
+### Popup Create Form
+- reset the Popup Form state when the dialog is closed
+- currently the state (i.e. the field input) still keep with the last input
+- whenever a user click on the create action button the form should be blank with a complete new state

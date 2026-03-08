@@ -7,7 +7,7 @@
  */
 import { useForm } from "@tanstack/react-form";
 import { ImagePlus, Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -144,6 +144,14 @@ function MetaFormDialog({
       onOpenChange(false);
     },
   });
+
+  /** Reset form and file state whenever the dialog opens. */
+  useEffect(() => {
+    if (open) {
+      form.reset();
+      setLogoFile(null);
+    }
+  }, [open, form]);
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
