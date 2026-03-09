@@ -11,7 +11,7 @@ import { LogOut } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import i18n, { changeLanguage } from "@/i18n";
+import { changeLanguage } from "@/i18n";
 
 import { MetaFormDialog } from "@/components/meta/meta-form-dialog";
 import { MetaList, type MetaListItem } from "@/components/meta/meta-list";
@@ -71,7 +71,7 @@ function toListItems(
 }
 
 function MetaTab() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const setUser = useAuthStore((s) => s.setUser);
 
