@@ -45,4 +45,4 @@
 - Supabase as the backbone
 
 ### Change Logs
-- always save you work log to `docs/ai-worklog` in name format `YYYY-MM-DD-task-name.md`
+- important! always save you work log to `docs/ai-worklog` in name format `YYYY-MM-DD-[bugfix|new|revision]-task-name.md`
