@@ -71,6 +71,7 @@
       "remarkMaxLength": "Remark cannot exceed 100 characters",
       "totalPrice": "Total",
       "editTitle": "Edit Transaction",
+      "notFound": "Transaction not found",
       "save": "Save",
       "submit": "Create Transaction",
       "submitting": "Creating...",

@@ -30,8 +30,9 @@ vi.mock("@tanstack/react-router", () => ({
 /** Mock auth store */
 const mockSetUser = vi.fn();
 vi.mock("@/store/auth.store", () => ({
-  useAuthStore: (selector: (state: { setUser: typeof mockSetUser }) => unknown) =>
-    selector({ setUser: mockSetUser }),
+  useAuthStore: (
+    selector: (state: { setUser: typeof mockSetUser }) => unknown,
+  ) => selector({ setUser: mockSetUser }),
 }));
 
 /** Mock react-i18next to return translation keys as-is */
@@ -172,9 +173,7 @@ describe("LoginForm", () => {
 
       await user.type(screen.getByLabelText(/email/i), "user@example.com");
       await user.type(screen.getByLabelText(/password/i), "password123");
-      await user.click(
-        screen.getByRole("button", { name: /access system/i }),
-      );
+      await user.click(screen.getByRole("button", { name: /access system/i }));
 
       await waitFor(() => {
         expect(mockSignInWithPassword).toHaveBeenCalledWith({
@@ -200,15 +199,11 @@ describe("LoginForm", () => {
 
       await user.type(screen.getByLabelText(/email/i), "user@example.com");
       await user.type(screen.getByLabelText(/password/i), "wrongpass");
-      await user.click(
-        screen.getByRole("button", { name: /access system/i }),
-      );
+      await user.click(screen.getByRole("button", { name: /access system/i }));
 
       await waitFor(() => {
         expect(
-          screen.getByText(
-            "Invalid email or password. Please try again.",
-          ),
+          screen.getByText("Invalid email or password. Please try again."),
         ).toBeInTheDocument();
       });
 

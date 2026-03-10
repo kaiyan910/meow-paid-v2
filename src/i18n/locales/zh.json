@@ -71,6 +71,7 @@
       "remarkMaxLength": "備註不能超過 100 個字元",
       "totalPrice": "合計",
       "editTitle": "編輯交易",
+      "notFound": "找不到交易記錄",
       "save": "儲存",
       "submit": "建立交易",
       "submitting": "建立中...",
