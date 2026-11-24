@@ -1,5 +1,6 @@
 import { ApiError, requireApiUser } from "@/lib/server/api";
 import {
+  prepareReceiptMessages,
   receiptRunMessagesSchema,
   runReceiptAgent,
 } from "@/lib/server/receipt-agent";
@@ -30,6 +31,7 @@ export function POST(request: NextRequest) {
     const { threadId, runId, state, messages } = inputSchema.parse(
       await readBoundedJson(request, maxRequestBytes),
     );
+    const modelMessages = await prepareReceiptMessages(messages);
     const encoder = new EventEncoder();
     const utf8 = new TextEncoder();
     const clientAbort = new AbortController();
@@ -53,7 +55,7 @@ export function POST(request: NextRequest) {
         try {
           const result = await runReceiptAgent(
             supabase,
-            messages,
+            modelMessages,
             state.draft,
             state.locale,
             signal,

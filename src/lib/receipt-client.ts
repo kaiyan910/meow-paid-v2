@@ -2,63 +2,10 @@ import {
   type ReceiptDraft,
   type ReceiptImage,
   receiptAgentSnapshotSchema,
-  receiptImageMaxBytes,
-  receiptImageSchema,
-  receiptImageTypes,
 } from "@/schemas/receipt.schema";
 import type { ReceiptMessage } from "@/store/receipt.store";
 import { HttpAgent } from "@ag-ui/client";
 import type { Message } from "@ag-ui/core";
-
-/** Compresses large supported photos locally and returns a transient preview and image payload. */
-export async function prepareReceiptImage(file: File) {
-  if (!file.size || file.size > 24 * 1024 * 1024)
-    throw new Error("Invalid image size");
-  const allowedMime = receiptImageTypes.some((type) => type === file.type);
-  let blob: Blob = file;
-  if (!allowedMime || file.size > receiptImageMaxBytes) {
-    const bitmap = await createImageBitmap(file);
-    try {
-      const scale = Math.min(1, 2800 / Math.max(bitmap.width, bitmap.height));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-      const context = canvas.getContext("2d");
-      if (!context) throw new Error("Cannot decode image");
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(
-          (value) =>
-            value ? resolve(value) : reject(new Error("Cannot encode image")),
-          "image/jpeg",
-          0.85,
-        );
-      });
-    } finally {
-      bitmap.close();
-    }
-  }
-  if (blob.size > receiptImageMaxBytes) throw new Error("Image too large");
-
-  const url = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () =>
-      typeof reader.result === "string"
-        ? resolve(reader.result)
-        : reject(new Error("Cannot read image"));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
-  return {
-    blob,
-    image: receiptImageSchema.parse({
-      mimeType: blob.type,
-      data: url.split(",")[1],
-    }),
-  };
-}
 
 type ReceiptTurn = {
   threadId: string;

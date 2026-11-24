@@ -1,11 +1,13 @@
 "use client";
 
+import { ReceiptCropDialog } from "@/components/receipt/receipt-crop-dialog";
 import { ReceiptReview } from "@/components/receipt/receipt-review";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useConfirmReceipt } from "@/hooks/use-transactions";
 import { confirmReceipt } from "@/lib/receipt";
-import { prepareReceiptImage, runReceiptTurn } from "@/lib/receipt-client";
+import { runReceiptTurn } from "@/lib/receipt-client";
+import type { CroppedReceiptImage } from "@/lib/receipt-image";
 import { cn } from "@/lib/utils";
 import {
   type ReceiptMessage,
@@ -19,7 +21,8 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 
-type ChatError = "badImage" | "notConfigured" | "runFailed";
+type ChatError = { key: "notConfigured" | "runFailed" } | { detail: string };
+type RecognitionUpload = CroppedReceiptImage & { name: string };
 
 /** Runs a receipt conversation and discards its state when the user leaves. */
 export function ReceiptAssistantPage() {
@@ -29,9 +32,15 @@ export function ReceiptAssistantPage() {
   const messages = useStore(store, (state) => state.messages);
   const running = useStore(store, (state) => state.running);
   const fileInput = useRef<HTMLInputElement>(null);
+  const chooseButton = useRef<HTMLButtonElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
   const inFlight = useRef<AbortController | null>(null);
   const conversationEnd = useRef<HTMLDivElement>(null);
   const [preview, setPreview] = useState<{ url: string; name: string } | null>(
+    null,
+  );
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [retryUpload, setRetryUpload] = useState<RecognitionUpload | null>(
     null,
   );
   const [text, setText] = useState("");
@@ -51,67 +60,70 @@ export function ReceiptAssistantPage() {
       conversationEnd.current?.scrollIntoView({ block: "nearest" });
   }, [messages.length]);
 
-  async function send(messageText: string, file?: File) {
+  async function send(messageText: string, upload?: RecognitionUpload) {
     const before = store.getState();
     if (before.running || confirmation.isPending) return false;
     const abortController = new AbortController();
     inFlight.current = abortController;
     store.setState({ running: true });
     setError(null);
+    if (upload) setRetryUpload(null);
+
+    const threadId = upload ? crypto.randomUUID() : before.threadId;
+    const history = upload ? [] : before.messages;
+    const message: ReceiptMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      text: messageText,
+    };
+    if (!upload) store.setState({ messages: [...history, message] });
+
     try {
-      const upload = file
-        ? await prepareReceiptImage(file).catch(() => null)
-        : null;
+      const result = await runReceiptTurn({
+        threadId,
+        history,
+        message,
+        draft: upload ? null : before.draft,
+        image: upload?.image,
+        abortController,
+        locale: i18n.language.startsWith("zh") ? "zh" : "en",
+      });
       if (abortController.signal.aborted) return false;
-      if (file && !upload) {
-        setError("badImage");
+
+      if (upload && !result.state.draft) {
+        setRetryUpload(upload);
+        setError({ detail: result.reply.text });
         return false;
       }
-      if (file && upload) {
-        setPreview({ url: URL.createObjectURL(upload.blob), name: file.name });
+
+      if (upload) {
+        setPreview({
+          url: URL.createObjectURL(upload.blob),
+          name: upload.name,
+        });
         confirmation.reset();
-        store.setState({
-          threadId: crypto.randomUUID(),
-          draftId: crypto.randomUUID(),
-          draft: null,
-          payeeId: null,
-          messages: [],
-        });
+        setText("");
       }
-      const { threadId, messages: history, draft } = store.getState();
-      const message: ReceiptMessage = {
-        id: crypto.randomUUID(),
-        role: "user",
-        text: messageText,
-      };
-      store.setState({ messages: [...history, message] });
-      try {
-        const result = await runReceiptTurn({
-          threadId,
-          history,
-          message,
-          draft,
-          image: upload?.image,
-          abortController,
-          locale: i18n.language.startsWith("zh") ? "zh" : "en",
-        });
-        if (abortController.signal.aborted) return false;
-        store.setState({
-          messages: [...history, message, result.reply],
-          draft: result.state.draft,
-          viewerId: result.state.viewerId,
-        });
-        return true;
-      } catch (failure) {
-        if (abortController.signal.aborted) return false;
-        store.setState({ messages: history });
-        setError(
+      store.setState({
+        ...(upload
+          ? { threadId, draftId: crypto.randomUUID(), payeeId: null }
+          : {}),
+        messages: [...history, message, result.reply],
+        draft: result.state.draft,
+        viewerId: result.state.viewerId,
+      });
+      return true;
+    } catch (failure) {
+      if (abortController.signal.aborted) return false;
+      if (upload) setRetryUpload(upload);
+      else store.setState({ messages: history });
+      setError({
+        key:
           failure instanceof Error && failure.message === "not_configured"
             ? "notConfigured"
             : "runFailed",
-        );
-        return false;
-      }
+      });
+      return false;
     } finally {
       if (!abortController.signal.aborted) store.setState({ running: false });
       inFlight.current = null;
@@ -145,7 +157,9 @@ export function ReceiptAssistantPage() {
             <ArrowLeft aria-hidden="true" />
           </Link>
         </Button>
-        <h2 className="text-lg font-bold">{t("receipt.title")}</h2>
+        <h2 ref={heading} tabIndex={-1} className="text-lg font-bold">
+          {t("receipt.title")}
+        </h2>
       </header>
 
       <section aria-label={t("receipt.title")} className="flex flex-col gap-3">
@@ -175,10 +189,11 @@ export function ReceiptAssistantPage() {
             onChange={(event) => {
               const file = event.currentTarget.files?.[0];
               event.currentTarget.value = "";
-              if (file) void send(t("receipt.readRequest"), file);
+              if (file && !busy) setPhoto(file);
             }}
           />
           <Button
+            ref={chooseButton}
             type="button"
             variant="outline"
             className="self-start"
@@ -188,6 +203,21 @@ export function ReceiptAssistantPage() {
             <Upload aria-hidden="true" />
             {t(preview ? "receipt.replace" : "receipt.upload")}
           </Button>
+          {retryUpload && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy}
+              className="max-w-full self-start"
+              onClick={() => {
+                void send(t("receipt.readRequest"), retryUpload);
+              }}
+            >
+              <span className="truncate">
+                {t("receipt.retry", { name: retryUpload.name })}
+              </span>
+            </Button>
+          )}
         </div>
         {messages.length > 0 && (
           <div className="max-h-72 overflow-y-auto rounded-md border border-border px-3 py-3">
@@ -229,7 +259,7 @@ export function ReceiptAssistantPage() {
         )}
         {error && (
           <p role="alert" className="text-sm text-destructive">
-            {t(`receipt.${error}`)}
+            {"key" in error ? t(`receipt.${error.key}`) : error.detail}
           </p>
         )}
         <form
@@ -266,6 +296,25 @@ export function ReceiptAssistantPage() {
           void save();
         }}
       />
+      {photo && (
+        <ReceiptCropDialog
+          file={photo}
+          onCancel={() => setPhoto(null)}
+          onRead={(prepared) => {
+            setPhoto(null);
+            void send(t("receipt.readRequest"), {
+              ...prepared,
+              name: photo.name,
+            });
+          }}
+          onCloseFocus={() => {
+            const target = chooseButton.current?.disabled
+              ? heading.current
+              : chooseButton.current;
+            target?.focus();
+          }}
+        />
+      )}
     </div>
   );
 }

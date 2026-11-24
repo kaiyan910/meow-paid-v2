@@ -7,6 +7,12 @@ MeowPaid records purchases and tracks shared spending.
 **Receipt**:
 A merchant-issued record of a purchase that may show the purchase date, item breakdown, and total paid.
 
+**Receipt photo**:
+The original photo the user selects for a receipt. It may show other details outside the receipt.
+
+**Cropped receipt image**:
+The portion of a receipt photo selected by the user for recognition.
+
 **Receipt draft**:
 A proposed transaction based on one receipt, awaiting the user's confirmation. Receipt lines with the same payment subtype contribute to a single transaction item.
 

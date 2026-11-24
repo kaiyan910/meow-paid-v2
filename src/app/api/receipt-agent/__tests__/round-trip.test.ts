@@ -3,6 +3,7 @@ import { runReceiptTurn } from "@/lib/receipt-client";
 import type { ReceiptMessage } from "@/store/receipt.store";
 // @vitest-environment node
 import { NextRequest } from "next/server";
+import sharp from "sharp";
 import { afterEach, expect, it, vi } from "vitest";
 
 const payer = "00000000-0000-4000-8000-000000000001";
@@ -165,3 +166,48 @@ it("reads one image, matches authenticated catalog entries, and applies a later 
   expect(requestBodies[1]).not.toContain(image.data);
   expect(modelRequests[2]).not.toContain(image.data);
 });
+
+it.each([
+  [1001, 40],
+  [40, 1001],
+])(
+  "rejects a %i × %i receipt image before contacting OpenRouter",
+  async (width, height) => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    const image = await sharp({
+      create: { width, height, channels: 3, background: "white" },
+    })
+      .png()
+      .toBuffer();
+    const response = await POST(
+      new NextRequest("http://localhost/api/receipt-agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-meowpaid": "1" },
+        body: JSON.stringify({
+          threadId: crypto.randomUUID(),
+          runId: crypto.randomUUID(),
+          state: { draft: null, locale: "en" },
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: "Read this receipt" },
+                {
+                  type: "image",
+                  source: {
+                    type: "data",
+                    mimeType: "image/png",
+                    value: image.toString("base64"),
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(fetch).not.toHaveBeenCalled();
+  },
+);

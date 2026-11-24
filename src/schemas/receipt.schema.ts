@@ -2,6 +2,7 @@ import { idSchema } from "@/schemas/api.schema";
 import { z } from "zod";
 
 export const receiptImageMaxBytes = 3 * 1024 * 1024;
+export const receiptImageMaxDimension = 1000;
 export const receiptImageTypes = [
   "image/jpeg",
   "image/png",
