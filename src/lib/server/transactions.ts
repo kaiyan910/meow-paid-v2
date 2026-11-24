@@ -10,10 +10,10 @@ export const transactionSelect =
   "*, shops(name, logo, shop_categories(name)), transaction_items(*, payment_subtypes(name))";
 
 /** Converts stored logos at both transaction response boundaries. */
-export function withAppShopLogo<T extends { shops: { logo: string } | null }>(
-  row: T,
-): T {
-  if (!row.shops) return row;
+export function withAppShopLogo<
+  T extends { shops: { logo: string | null } | null },
+>(row: T): T {
+  if (!row.shops?.logo) return row;
   return {
     ...row,
     shops: { ...row.shops, logo: toAppLogoUrl(row.shops.logo) },
@@ -26,13 +26,14 @@ export async function saveTransaction(
   input: z.infer<typeof transactionWriteSchema>,
   id: string | null,
 ) {
-  const { data, error } = await supabase.rpc("save_transaction_with_items", {
+  const { data, error } = await supabase.rpc("save_transaction_with_discount", {
     p_id: id,
     p_date: input.transaction_date,
     p_shop_id: input.shop_id,
     p_payee_id: input.payee_id,
     p_remark: input.remark,
     p_items: input.items,
+    p_discount: input.discount ?? null,
   });
   readData({ data, error });
   return null;

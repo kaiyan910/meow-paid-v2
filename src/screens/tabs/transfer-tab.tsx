@@ -29,11 +29,11 @@ function TransferTab() {
     const rows = (profiles ?? []).map((profile) => {
       const paid =
         payeeTotals?.find((r) => r.payee_id === profile.user_id)?.total ?? 0;
-      const owes = Math.max(0, Math.round((avg - paid) * 10) / 10);
+      const owes = Math.max(0, avg - paid);
       return {
         userId: profile.user_id,
         displayName: profile.display_name ?? profile.user_id,
-        paid: Math.round(paid * 10) / 10,
+        paid,
         owes,
       };
     });

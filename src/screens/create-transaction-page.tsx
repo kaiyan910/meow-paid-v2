@@ -15,6 +15,7 @@ function CreateTransactionPage() {
     transaction_date: new Date(),
     shop_id: "",
     payee_id: "",
+    discount: "",
     remark: "",
     items: [{ payment_subtype_id: "", price: "" }],
   }));

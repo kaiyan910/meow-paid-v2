@@ -24,6 +24,7 @@ function EditTransactionPage({ txId }: { txId: string }) {
       transaction_date: new Date(tx.transaction_date),
       shop_id: tx.shop_id,
       payee_id: tx.payee_id,
+      discount: tx.discount ? tx.discount.toFixed(2) : "",
       remark: tx.remark ?? "",
       items: tx.transaction_items.map((item) => ({
         payment_subtype_id: item.payment_subtype_id,

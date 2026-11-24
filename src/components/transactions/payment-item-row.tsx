@@ -58,7 +58,7 @@ function PaymentItemRow({
         {/* Price input */}
         <Input
           type="number"
-          step="0.1"
+          step="0.01"
           min="0"
           value={price}
           onChange={(e) => onPriceChange(e.target.value)}

@@ -49,9 +49,15 @@ pnpm install
 
 Copy `.env.example` to `.env.local` and set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` to your project URL and publishable key or legacy anon key. The server also reads the old `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY` names for existing local setups.
 
-For an existing database, apply [migration 006](docs/migrations/006-atomic-transaction-writes.sql) before using the new transaction create and edit endpoints. For a new database, apply the [migrations](docs/migrations) in numeric order and set up the public `shop-logos` bucket with authenticated upload permissions.
+For an existing database, apply any outstanding [migrations](docs/migrations) through [007](docs/migrations/007-receipt-assistant.sql) before deploying this version. For a new database, apply the migrations in numeric order and set up the public `shop-logos` bucket with authenticated upload permissions.
 
 The browser calls MeowPaid's own API. Supabase Auth sessions are stored in HTTP-only cookies and data requests run under each signed-in user's existing RLS permissions. Existing users sign in once after switching from the Vite app.
+
+### Receipt assistant
+
+Set `OPENROUTER_API_KEY` and `OPENROUTER_RECEIPT_MODEL` on the Next.js server. Use an OpenRouter model that supports image input and tool calling through a provider that supports zero data retention. The OpenRouter key is used only on the server.
+
+From Transactions, open the robot button beside Add and upload one receipt photo. The assistant reads the image and looks up shops and payment subtypes. Review the draft, use the chat or form to correct it, and confirm when the amounts reconcile. A proposed shop is created without a logo in the same operation as the transaction. MeowPaid discards the photo and conversation when you leave the page.
 
 ### Development
 

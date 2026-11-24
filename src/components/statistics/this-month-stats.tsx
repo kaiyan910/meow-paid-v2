@@ -11,9 +11,10 @@ import { useMonthlyStats } from "@/hooks/use-statistics";
 function ThisMonthStats() {
   const { t } = useTranslation();
   const currentMonth = moment().startOf("month");
-  const { data: stats, isLoading } = useMonthlyStats(currentMonth);
+  const { data: summary, isLoading } = useMonthlyStats(currentMonth);
+  const stats = summary?.breakdown;
 
-  const totalExpenses = stats?.reduce((sum, row) => sum + row.total, 0) ?? 0;
+  const categoryTotal = stats?.reduce((sum, row) => sum + row.total, 0) ?? 0;
   const maxTotal =
     stats && stats.length > 0 ? Math.max(...stats.map((r) => r.total)) : 1;
 
@@ -33,7 +34,7 @@ function ThisMonthStats() {
           {t("statistics.totalExpenses")}
         </p>
         <p className="mt-1 text-4xl font-bold text-primary">
-          ${totalExpenses.toFixed(2)}
+          ${(summary?.paidTotal ?? 0).toFixed(2)}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
           {currentMonth.format("MMMM YYYY")}
@@ -48,8 +49,8 @@ function ThisMonthStats() {
         {stats && stats.length > 0 ? (
           stats.map((row) => {
             const pct =
-              totalExpenses > 0
-                ? Math.round((row.total / totalExpenses) * 100)
+              categoryTotal > 0
+                ? Math.round((row.total / categoryTotal) * 100)
                 : 0;
             return (
               <div key={row.payment_subtype_id} className="space-y-1">

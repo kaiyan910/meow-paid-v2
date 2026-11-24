@@ -14,6 +14,12 @@ export const transactionSchema = z.object({
   transaction_date: z.string().min(1),
   shop_id: z.string().min(1),
   payee_id: z.string().min(1),
+  discount: z
+    .number()
+    .min(0)
+    .max(999_999_999_999.99)
+    .multipleOf(0.01)
+    .optional(),
   remark: z.string().max(100).nullable(),
   items: z.array(transactionItemSchema).min(1),
 });
@@ -29,6 +35,7 @@ export const transactionFormSchema = z.object({
   transaction_date: z.date({ error: "Transaction date is required" }),
   shop_id: z.string().min(1, "Shop is required"),
   payee_id: z.string().min(1, "Payee is required"),
+  discount: z.string(),
   remark: z.string().max(100).optional(),
   items: z
     .array(transactionItemFormSchema)

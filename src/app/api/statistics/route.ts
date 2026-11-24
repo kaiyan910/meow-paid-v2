@@ -11,6 +11,7 @@ import {
 
 const querySchema = z.discriminatedUnion("mode", [
   dateRangeSchema.safeExtend({ mode: z.literal("breakdown") }),
+  dateRangeSchema.safeExtend({ mode: z.literal("summary") }),
   z.object({
     mode: z.literal("totals"),
     ranges: z
@@ -36,16 +37,39 @@ async function getMonthlyStats(
   );
 }
 
-/** Returns a category breakdown or six filtered totals using browser-provided month boundaries. */
+async function getMonthlySpendingTotal(
+  supabase: RequestSupabase,
+  range: z.infer<typeof dateRangeSchema>,
+) {
+  return z.number().parse(
+    readData(
+      await supabase.rpc("get_monthly_spending_total", {
+        start_date: range.start,
+        end_date: range.end,
+      }),
+    ),
+  );
+}
+
+/** Returns the category breakdown and actual spending for browser-provided month boundaries. */
 export function GET(request: NextRequest) {
   return requireApiUser(request, async ({ supabase }) => {
     const query = querySchema.parse(
       Object.fromEntries(request.nextUrl.searchParams),
     );
     if (query.mode === "breakdown") return getMonthlyStats(supabase, query);
+    if (query.mode === "summary") {
+      const [breakdown, paidTotal] = await Promise.all([
+        getMonthlyStats(supabase, query),
+        getMonthlySpendingTotal(supabase, query),
+      ]);
+      return { breakdown, paidTotal };
+    }
 
     return Promise.all(
       query.ranges.map(async (range) => {
+        if (!query.paymentType && !query.paymentSubtype)
+          return getMonthlySpendingTotal(supabase, range);
         const rows = await getMonthlyStats(supabase, range);
         let total = 0;
         for (const row of rows) {
@@ -58,7 +82,7 @@ export function GET(request: NextRequest) {
             continue;
           total += row.total;
         }
-        return Math.round(total * 10) / 10;
+        return Math.round(total * 100) / 100;
       }),
     );
   });

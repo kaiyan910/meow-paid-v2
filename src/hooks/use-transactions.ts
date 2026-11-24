@@ -4,7 +4,8 @@ import { z } from "zod";
 
 import { apiFetch } from "@/lib/api";
 import { monthRange } from "@/lib/month-range";
-import { transactionRowSchema } from "@/schemas/api.schema";
+import { idSchema, transactionRowSchema } from "@/schemas/api.schema";
+import type { receiptConfirmSchema } from "@/schemas/receipt.schema";
 import type { TransactionFormValues } from "@/schemas/transaction.schema";
 
 const TX_KEY = ["transactions"];
@@ -35,14 +36,20 @@ function transactionPath(id: string) {
   return `/api/transactions/${encodeURIComponent(id)}`;
 }
 
-function useTransactionMutation<T>(mutationFn: (input: T) => Promise<null>) {
+function useTransactionMutation<T, Result>(
+  mutationFn: (input: T) => Promise<Result>,
+  options: { changesShops?: boolean; gcTime?: number } = {},
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn,
+    gcTime: options.gcTime,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: TX_KEY });
       void queryClient.invalidateQueries({ queryKey: ["statistics"] });
       void queryClient.invalidateQueries({ queryKey: ["transfer"] });
+      if (options.changesShops)
+        void queryClient.invalidateQueries({ queryKey: ["meta", "shops"] });
     },
   });
 }
@@ -50,6 +57,18 @@ function useTransactionMutation<T>(mutationFn: (input: T) => Promise<null>) {
 export function useCreateTransaction() {
   return useTransactionMutation((body: TransactionFormValues) =>
     apiFetch("/api/transactions", z.null(), { method: "POST", body }),
+  );
+}
+
+/** Saves a reviewed receipt through the confirmation endpoint. */
+export function useConfirmReceipt() {
+  return useTransactionMutation(
+    (body: z.infer<typeof receiptConfirmSchema>) =>
+      apiFetch("/api/receipt-agent/confirm", idSchema, {
+        method: "POST",
+        body,
+      }),
+    { changesShops: true, gcTime: 0 },
   );
 }
 

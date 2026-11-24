@@ -1,3 +1,5 @@
 allowBuilds:
   '@biomejs/biome': true
   esbuild: true
+overrides:
+  'undici@>=7.0.0 <8.0.0': 7.30.2

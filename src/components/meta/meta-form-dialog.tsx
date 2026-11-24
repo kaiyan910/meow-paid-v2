@@ -133,7 +133,14 @@ function MetaFormDialog({
 
         const schema = SCHEMA_MAP[metaType];
         const fields = extractFields(metaType, mutableValues);
-        const parsed = schema.safeParse(fields);
+        const hasMissingShopLogo =
+          metaType === "shop" && isEdit && editItem.logo === null;
+        const parsed =
+          hasMissingShopLogo && !mutableValues.logo
+            ? shopSchema
+                .extend({ logo: shopSchema.shape.logo.nullable() })
+                .safeParse({ ...fields, logo: null })
+            : schema.safeParse(fields);
         if (!parsed.success) return;
 
         if (isEdit && editItem?.id) {
@@ -265,7 +272,12 @@ function MetaFormDialog({
                 name="logo"
                 validators={{
                   onChange: ({ value }) => {
-                    if (!value && !logoFile) return t("meta.form.logoRequired");
+                    if (
+                      !value &&
+                      !logoFile &&
+                      !(isEdit && editItem.logo === null)
+                    )
+                      return t("meta.form.logoRequired");
                     return undefined;
                   },
                 }}

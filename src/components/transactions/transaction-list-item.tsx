@@ -102,6 +102,16 @@ function TransactionListItem({
                 <span className="font-medium">−${item.price.toFixed(2)}</span>
               </li>
             ))}
+            {transaction.discount > 0 && (
+              <li className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">
+                  {t("transactions.form.discount")}
+                </span>
+                <span className="font-medium">
+                  +${transaction.discount.toFixed(2)}
+                </span>
+              </li>
+            )}
           </ul>
 
           {/* Remark */}

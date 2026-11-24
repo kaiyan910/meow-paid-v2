@@ -23,6 +23,7 @@ import { useProfiles } from "@/hooks/use-profile";
 import { cn } from "@/lib/utils";
 import {
   type TransactionFormDefaults,
+  type TransactionFormValues,
   transactionSchema,
 } from "@/schemas/transaction.schema";
 import moment from "moment";
@@ -35,13 +36,7 @@ interface TransactionFormProps {
   /** Default form values */
   defaultValues: TransactionFormDefaults;
   /** Called with validated payload on submit */
-  onSubmit: (payload: {
-    transaction_date: string;
-    shop_id: string;
-    payee_id: string;
-    remark: string | null;
-    items: Array<{ payment_subtype_id: string; price: number }>;
-  }) => Promise<void>;
+  onSubmit: (payload: TransactionFormValues) => Promise<void>;
   /** Whether the mutation is in progress */
   isPending: boolean;
 }
@@ -83,13 +78,18 @@ function TransactionForm({
         transaction_date: moment(value.transaction_date).toISOString(),
         shop_id: value.shop_id,
         payee_id: value.payee_id,
+        discount: Number(value.discount),
         remark: value.remark || null,
         items: parsedItems,
       };
 
       // Final Zod validation on the submission payload
       const parsed = transactionSchema.safeParse(payload);
-      if (!parsed.success) return;
+      const subtotal = parsedItems.reduce((sum, item) => sum + item.price, 0);
+      if (!parsed.success || payload.discount > Number(subtotal.toFixed(2))) {
+        setSaveError(true);
+        return;
+      }
 
       try {
         await onSubmit(parsed.data);
@@ -304,9 +304,32 @@ function TransactionForm({
           )}
         </form.Field>
 
+        <form.Field name="discount">
+          {(field) => (
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="transaction-discount">
+                {t("transactions.form.discount")}
+              </Label>
+              <Input
+                id="transaction-discount"
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={field.state.value}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            </div>
+          )}
+        </form.Field>
+
         {/* Total */}
-        <form.Subscribe selector={(state) => state.values.items}>
-          {(items) => {
+        <form.Subscribe
+          selector={(state) =>
+            [state.values.items, state.values.discount] as const
+          }
+        >
+          {([items, discount]) => {
             const totalPrice = items.reduce((sum, item) => {
               const p = Number.parseFloat(item.price);
               return sum + (Number.isNaN(p) ? 0 : p);
@@ -317,7 +340,7 @@ function TransactionForm({
                   {t("transactions.form.totalPrice")}
                 </span>
                 <span className="text-sm font-bold text-destructive">
-                  −${totalPrice.toFixed(2)}
+                  −${(totalPrice - Number(discount)).toFixed(2)}
                 </span>
               </div>
             );

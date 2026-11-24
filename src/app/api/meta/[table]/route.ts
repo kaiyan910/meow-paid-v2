@@ -44,7 +44,10 @@ export function GET(request: NextRequest, { params }: Context) {
           .select("*, shop_categories(name)")
           .order("created_at", { ascending: false }),
       );
-      return rows?.map((row) => ({ ...row, logo: toAppLogoUrl(row.logo) }));
+      return rows?.map((row) => ({
+        ...row,
+        logo: row.logo === null ? null : toAppLogoUrl(row.logo),
+      }));
     }
     if (table === "payment_subtypes") {
       const paymentType = request.nextUrl.searchParams.get("paymentType");
@@ -88,7 +91,13 @@ export function PATCH(request: NextRequest, { params }: Context) {
   return requireApiUser(request, async ({ supabase }) => {
     const table = tableSchema.parse((await params).table);
     const id = parseId(request);
-    const values = writeSchemas[table].parse(await request.json());
+    const schema =
+      table === "shops"
+        ? writeSchemas.shops.extend({
+            logo: writeSchemas.shops.shape.logo.nullable(),
+          })
+        : writeSchemas[table];
+    const values = schema.parse(await request.json());
     readData(
       await supabase
         .from(table)

@@ -5,19 +5,18 @@ import { z } from "zod";
 import { apiFetch } from "@/lib/api";
 import { monthRange } from "@/lib/month-range";
 import {
-  monthlyStatSchema,
+  monthlySummarySchema,
   paymentSubtypeOptionSchema,
 } from "@/schemas/api.schema";
 
 /** Fetches one month of category totals. */
 export function useMonthlyStats(month: Moment) {
   const range = monthRange(month);
-  const params = new URLSearchParams({ mode: "breakdown", ...range });
+  const params = new URLSearchParams({ mode: "summary", ...range });
 
   return useQuery({
     queryKey: ["statistics", "monthly", range.start],
-    queryFn: () =>
-      apiFetch(`/api/statistics?${params}`, monthlyStatSchema.array()),
+    queryFn: () => apiFetch(`/api/statistics?${params}`, monthlySummarySchema),
   });
 }
 

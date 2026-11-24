@@ -13,7 +13,7 @@ export interface ShopRow {
   id: string;
   name: string;
   shop_category_id: string;
-  logo: string;
+  logo: string | null;
   created_at: string | null;
 }
 
@@ -43,6 +43,7 @@ export interface TransactionRow {
   shop_id: string;
   payee_id: string;
   price: number;
+  discount: number;
   remark: string | null;
   created_at: string | null;
 }
@@ -59,7 +60,7 @@ export interface TransactionItemRow {
 export interface TransactionWithDetails extends TransactionRow {
   shops: {
     name: string;
-    logo: string;
+    logo: string | null;
     shop_categories: { name: string } | null;
   } | null;
   transaction_items: Array<

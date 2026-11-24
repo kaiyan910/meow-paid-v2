@@ -18,7 +18,7 @@ export const shopCategoryRowSchema = namedRow;
 export const paymentTypeRowSchema = namedRow;
 export const shopRowSchema = namedRow.extend({
   shop_category_id: idSchema,
-  logo: z.string(),
+  logo: z.string().nullable(),
   shop_categories: relatedName,
 });
 export const paymentSubtypeRowSchema = namedRow.extend({
@@ -52,12 +52,13 @@ export const transactionRowSchema = z.object({
   shop_id: idSchema,
   payee_id: idSchema,
   price: z.number(),
+  discount: z.number().default(0),
   remark: z.string().nullable(),
   created_at: createdAt,
   shops: z
     .object({
       name: z.string(),
-      logo: z.string(),
+      logo: z.string().nullable(),
       shop_categories: relatedName,
     })
     .nullable(),
@@ -79,6 +80,10 @@ export const monthlyStatSchema = z.object({
   payment_type_id: idSchema,
   payment_type_name: z.string(),
   total: z.number(),
+});
+export const monthlySummarySchema = z.object({
+  paidTotal: z.number(),
+  breakdown: monthlyStatSchema.array(),
 });
 export const payeeTotalSchema = z.object({
   payee_id: idSchema,

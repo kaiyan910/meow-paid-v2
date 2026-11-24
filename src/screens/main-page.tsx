@@ -3,6 +3,7 @@
 import {
   ArrowLeftRight,
   BarChart3,
+  Bot,
   ListOrdered,
   Plus,
   Settings,
@@ -43,6 +44,8 @@ const NAV_ITEMS = [
     label: "main.nav.meta",
   },
 ] as const;
+const headerActionClass =
+  "size-9 border-2 shadow-[2px_2px_0px_0px] shadow-border/60 transition-all active:shadow-none";
 
 function MainPage({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
@@ -71,15 +74,33 @@ function MainPage({ children }: { children: ReactNode }) {
           {t("main.title")}
         </h1>
         {showHeaderAction && (
-          <Button
-            size="icon"
-            variant="outline"
-            className="size-9 border-2 shadow-[2px_2px_0px_0px] shadow-border/60 transition-all active:translate-x-[px] active:translate-y-[px] active:shadow-none"
-            onClick={handleHeaderAction}
-          >
-            <Plus className="size-4" />
-            <span className="sr-only">{t("main.add")}</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            {isTransactionsTab && (
+              <Button
+                asChild
+                size="icon"
+                variant="outline"
+                className={headerActionClass}
+              >
+                <Link
+                  href="/main/transactions/receipt"
+                  aria-label={t("receipt.title")}
+                >
+                  <Bot aria-hidden="true" />
+                </Link>
+              </Button>
+            )}
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              className={headerActionClass}
+              onClick={handleHeaderAction}
+            >
+              <Plus aria-hidden="true" />
+              <span className="sr-only">{t("main.add")}</span>
+            </Button>
+          </div>
         )}
       </header>
 

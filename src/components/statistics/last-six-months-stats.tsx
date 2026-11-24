@@ -85,7 +85,7 @@ function LastSixMonthsStats() {
   const average = useMemo(() => {
     if (!chartData.length) return 0;
     const sum = chartData.reduce((acc, d) => acc + d.total, 0);
-    return Math.round((sum / chartData.length) * 10) / 10;
+    return sum / chartData.length;
   }, [chartData]);
 
   /** Handle payment type change — reset subtype when type changes. */
