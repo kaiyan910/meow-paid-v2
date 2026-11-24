@@ -111,7 +111,7 @@
     "message": "傳訊息畀收據助手",
     "messagePlaceholder": "問收據資料，或者叫助手修改",
     "send": "傳送",
-    "working": "處理緊收據…",
+    "working": "處理緊收據",
     "badImage": "開唔到相片，請試用較細嘅 JPEG、PNG 或 WebP 相片。",
     "notConfigured": "設定 OpenRouter 後先可以使用收據助手。",
     "runFailed": "助手未能完成，請重試或者揀一張更清晰嘅收據相片。",

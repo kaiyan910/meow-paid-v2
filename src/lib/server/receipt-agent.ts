@@ -13,6 +13,7 @@ import {
 } from "@/schemas/receipt.schema";
 import {
   AIMessage,
+  type AIMessageChunk,
   type BaseMessage,
   HumanMessage,
   SystemMessage,
@@ -70,7 +71,8 @@ const systemPrompt = [
   "On a correction, apply only the changes requested by the user to the supplied current draft. Use the catalog tools when changing a match. For a question without a change, return a null draft and respond in chat.",
   "The payee is selected in the review form. If asked to change the payee, direct the user to the payee selector.",
   "If there is no receipt or current draft, ask the user to upload a single clear receipt. Never claim a transaction or shop has been saved. The user must confirm the draft in the app.",
-  "Finish every turn by calling return_receipt_draft with your reply and the draft or null.",
+  "When using catalog tools, emit only tool calls. After all lookups, output a single JSON object as your final answer, starting with the user-facing reply string, followed by the draft or null. Do not wrap the JSON in Markdown.",
+  `Final answer JSON schema: ${JSON.stringify(z.toJSONSchema(receiptAgentResultSchema))}`,
 ].join("\n");
 
 /** Checks image dimensions before opening an agent run or forwarding any pixels. */
@@ -213,24 +215,83 @@ function catalogTools(
   };
 }
 
-const resultTool = tool((result) => result, {
-  name: "return_receipt_draft",
-  description:
-    "Return the chat reply and reviewed receipt data. This tool does not save anything.",
-  schema: receiptAgentResultSchema,
-});
+/** Decodes the leading reply up to the last complete JSON character. */
+function readReplyPrefix(output: string) {
+  const match =
+    /^\s*\{\s*"reply"\s*:\s*("(?:[^"\\]|\\(?:["\\/bfnrt]|u[\da-fA-F]{4}))*)(")?/.exec(
+      output,
+    );
+  if (!match) return null;
+  try {
+    const reply = receiptAgentResultSchema.shape.reply.safeParse(
+      JSON.parse(`${match[1]}"`),
+    );
+    if (!reply.success) return null;
+    const text = reply.data;
+    const last = text.charCodeAt(text.length - 1);
+    return {
+      text: last >= 0xd800 && last <= 0xdbff ? text.slice(0, -1) : text,
+      complete: Boolean(match[2]),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Validates a complete model response before publishing its draft. */
+function parseResult(output: string) {
+  try {
+    const result = receiptAgentResultSchema.safeParse(JSON.parse(output));
+    return result.success ? result.data : null;
+  } catch {
+    return null;
+  }
+}
 
 async function readDraft(
   model: ChatOpenRouter,
   tools: ReturnType<typeof catalogTools>["tools"],
   messages: BaseMessage[],
   signal: AbortSignal,
+  onReplyDelta: (delta: string) => void,
 ) {
-  const agent = model.bindTools([...tools, resultTool]);
+  const agent = model.bindTools(tools);
   for (let turn = 0; turn < 6; turn++) {
-    const response = await agent.invoke(messages, { signal });
+    let response: AIMessageChunk | undefined;
+    let replyText = "";
+    let replyComplete = false;
+    for await (const chunk of await agent.stream(messages, { signal })) {
+      response = response ? response.concat(chunk) : chunk;
+      if (replyComplete || !chunk.text || response.tool_call_chunks?.length)
+        continue;
+      const reply = readReplyPrefix(response.text);
+      if (!reply) continue;
+      replyComplete = reply.complete;
+      if (
+        reply.text.startsWith(replyText) &&
+        reply.text.length > replyText.length
+      ) {
+        onReplyDelta(reply.text.slice(replyText.length));
+        replyText = reply.text;
+      }
+    }
+    if (!response) throw new ApiError(502);
+    const toolCallCount = response.tool_call_chunks?.length ?? 0;
+    if (toolCallCount === 0) {
+      const result = parseResult(response.text);
+      if (result) return result;
+      if (replyText) throw new ApiError(502);
+      messages.push(
+        response,
+        new HumanMessage(
+          "Return the final answer as JSON with reply first, then draft.",
+        ),
+      );
+      continue;
+    }
     const calls = response.tool_calls ?? [];
-    if (calls.length > 8) throw new ApiError(502);
+    if (replyText || calls.length > 8 || calls.length !== toolCallCount)
+      throw new ApiError(502);
     messages.push(response);
 
     const replies = await Promise.all(
@@ -245,18 +306,7 @@ async function readDraft(
         return new ToolMessage({ tool_call_id: call.id, content });
       }),
     );
-    const final = calls.find((call) => call.name === resultTool.name);
-    if (final) {
-      const result = receiptAgentResultSchema.safeParse(final.args);
-      if (result.success) return result.data;
-    }
     messages.push(...replies);
-    if (!calls.length)
-      messages.push(
-        new HumanMessage(
-          "Return the result with the return_receipt_draft tool.",
-        ),
-      );
   }
   throw new ApiError(502);
 }
@@ -269,6 +319,7 @@ export const runReceiptAgent = traceable(
     draft: ReceiptDraft | null,
     locale: "en" | "zh",
     signal: AbortSignal,
+    onReplyDelta: (delta: string) => void,
   ) => {
     const { OPENROUTER_API_KEY: apiKey, OPENROUTER_RECEIPT_MODEL: model } =
       process.env;
@@ -303,6 +354,7 @@ export const runReceiptAgent = traceable(
       tools,
       [prompt, ...messages],
       signal,
+      onReplyDelta,
     );
     if (!recognized.draft) return { reply: recognized.reply, draft };
 

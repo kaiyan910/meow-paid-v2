@@ -111,7 +111,7 @@
     "message": "Message to the receipt assistant",
     "messagePlaceholder": "Ask about the receipt or correct a detail",
     "send": "Send",
-    "working": "Reviewing your receipt…",
+    "working": "Reviewing your receipt",
     "badImage": "Could not open that image. Try a smaller JPEG, PNG, or WebP photo.",
     "notConfigured": "The receipt assistant is unavailable until OpenRouter is configured.",
     "runFailed": "The assistant could not finish. Try again or choose a clearer receipt photo.",

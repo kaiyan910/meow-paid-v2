@@ -11,10 +11,11 @@ import type { CroppedReceiptImage } from "@/lib/receipt-image";
 import { cn } from "@/lib/utils";
 import {
   type ReceiptMessage,
+  type ReceiptSessionStore,
   createReceiptSession,
 } from "@/store/receipt.store";
 import { useTransactionStore } from "@/store/transaction.store";
-import { ArrowLeft, ArrowUp, Bot, Loader2, Upload } from "lucide-react";
+import { ArrowLeft, ArrowUp, Bot, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -24,18 +25,81 @@ import { useStore } from "zustand";
 type ChatError = { key: "notConfigured" | "runFailed" } | { detail: string };
 type RecognitionUpload = CroppedReceiptImage & { name: string };
 
+/** Renders live reply updates without rerendering the draft or composer. */
+function ReceiptConversation({ store }: { store: ReceiptSessionStore }) {
+  const { t } = useTranslation();
+  const messages = useStore(store, (state) => state.messages);
+  const pendingReply = useStore(store, (state) => state.pendingReply);
+  const running = useStore(store, (state) => state.running);
+  const scrollPane = useRef<HTMLDivElement>(null);
+  const followLatest = useRef(true);
+
+  useEffect(() => {
+    const pane = scrollPane.current;
+    if (pane && followLatest.current) pane.scrollTop = pane.scrollHeight;
+  });
+
+  if (!messages.length) return null;
+  const visibleMessages = pendingReply ? [...messages, pendingReply] : messages;
+
+  return (
+    <div
+      ref={scrollPane}
+      className="max-h-72 overflow-y-auto rounded-md border border-border px-3 py-3"
+      onScroll={({ currentTarget: pane }) => {
+        followLatest.current =
+          pane.scrollHeight - pane.scrollTop - pane.clientHeight <= 16;
+      }}
+    >
+      <ol
+        aria-label={t("receipt.conversation")}
+        aria-live="polite"
+        aria-busy={running && Boolean(pendingReply?.text)}
+        className="flex flex-col gap-3"
+      >
+        {visibleMessages.map((message) => (
+          <li
+            key={message.id}
+            className={cn(
+              "flex max-w-[92%] items-start gap-2 rounded-md px-3 py-2 text-sm",
+              message.role === "user"
+                ? "self-end bg-primary/10"
+                : "self-start bg-muted",
+            )}
+          >
+            {message.role === "assistant" ? (
+              <Bot className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            ) : null}
+            <span className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+              {message.text || (
+                <span className="text-muted-foreground">
+                  {t("receipt.working")}
+                  <span
+                    aria-hidden="true"
+                    className="inline-block motion-safe:animate-receipt-reply-dots"
+                  >
+                    ...
+                  </span>
+                </span>
+              )}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 /** Runs a receipt conversation and discards its state when the user leaves. */
 export function ReceiptAssistantPage() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [store] = useState(createReceiptSession);
-  const messages = useStore(store, (state) => state.messages);
   const running = useStore(store, (state) => state.running);
   const fileInput = useRef<HTMLInputElement>(null);
   const chooseButton = useRef<HTMLButtonElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const inFlight = useRef<AbortController | null>(null);
-  const conversationEnd = useRef<HTMLDivElement>(null);
   const [preview, setPreview] = useState<{ url: string; name: string } | null>(
     null,
   );
@@ -55,17 +119,12 @@ export function ReceiptAssistantPage() {
     },
     [preview],
   );
-  useEffect(() => {
-    if (messages.length)
-      conversationEnd.current?.scrollIntoView({ block: "nearest" });
-  }, [messages.length]);
 
   async function send(messageText: string, upload?: RecognitionUpload) {
     const before = store.getState();
     if (before.running || confirmation.isPending) return false;
     const abortController = new AbortController();
     inFlight.current = abortController;
-    store.setState({ running: true });
     setError(null);
     if (upload) setRetryUpload(null);
 
@@ -76,7 +135,16 @@ export function ReceiptAssistantPage() {
       role: "user",
       text: messageText,
     };
-    if (!upload) store.setState({ messages: [...history, message] });
+    const reply: ReceiptMessage = {
+      id: crypto.randomUUID(),
+      role: "assistant",
+      text: "",
+    };
+    store.setState({
+      running: true,
+      messages: [...before.messages, message],
+      pendingReply: reply,
+    });
 
     try {
       const result = await runReceiptTurn({
@@ -87,10 +155,15 @@ export function ReceiptAssistantPage() {
         image: upload?.image,
         abortController,
         locale: i18n.language.startsWith("zh") ? "zh" : "en",
+        onReply: ({ text }) => {
+          if (!abortController.signal.aborted)
+            store.setState({ pendingReply: { ...reply, text } });
+        },
       });
       if (abortController.signal.aborted) return false;
 
       if (upload && !result.state.draft) {
+        store.setState({ messages: before.messages, pendingReply: null });
         setRetryUpload(upload);
         setError({ detail: result.reply.text });
         return false;
@@ -108,15 +181,16 @@ export function ReceiptAssistantPage() {
         ...(upload
           ? { threadId, draftId: crypto.randomUUID(), payeeId: null }
           : {}),
-        messages: [...history, message, result.reply],
+        messages: [...history, message, { ...reply, text: result.reply.text }],
+        pendingReply: null,
         draft: result.state.draft,
         viewerId: result.state.viewerId,
       });
       return true;
     } catch (failure) {
       if (abortController.signal.aborted) return false;
+      store.setState({ messages: before.messages, pendingReply: null });
       if (upload) setRetryUpload(upload);
-      else store.setState({ messages: history });
       setError({
         key:
           failure instanceof Error && failure.message === "not_configured"
@@ -219,44 +293,7 @@ export function ReceiptAssistantPage() {
             </Button>
           )}
         </div>
-        {messages.length > 0 && (
-          <div className="max-h-72 overflow-y-auto rounded-md border border-border px-3 py-3">
-            <ol
-              aria-label={t("receipt.conversation")}
-              aria-live="polite"
-              className="flex flex-col gap-3"
-            >
-              {messages.map((message) => (
-                <li
-                  key={message.id}
-                  className={cn(
-                    "flex max-w-[92%] items-start gap-2 rounded-md px-3 py-2 text-sm",
-                    message.role === "user"
-                      ? "self-end bg-primary/10"
-                      : "self-start bg-muted",
-                  )}
-                >
-                  {message.role === "assistant" && (
-                    <Bot
-                      className="mt-0.5 size-4 shrink-0"
-                      aria-hidden="true"
-                    />
-                  )}
-                  <span className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                    {message.text}
-                  </span>
-                </li>
-              ))}
-            </ol>
-            <div ref={conversationEnd} />
-          </div>
-        )}
-        {running && (
-          <output className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            {t("receipt.working")}
-          </output>
-        )}
+        <ReceiptConversation store={store} />
         {error && (
           <p role="alert" className="text-sm text-destructive">
             {"key" in error ? t(`receipt.${error.key}`) : error.detail}

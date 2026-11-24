@@ -28,29 +28,51 @@ const draft = {
   lines: [{ label: "Tea", amount: "12.35", subtypeId: food }],
 };
 
-function modelResponse(calls: Array<{ name: string; args: unknown }>) {
-  return Response.json({
-    id: "test-completion",
-    object: "chat.completion",
-    created: 1,
-    model: "test/model",
-    choices: [
-      {
-        index: 0,
-        finish_reason: "tool_calls",
-        message: {
-          role: "assistant",
-          content: null,
-          tool_calls: calls.map(({ name, args }, index) => ({
-            id: `call_${index}`,
-            type: "function",
-            function: { name, arguments: JSON.stringify(args) },
-          })),
-        },
+function modelResponse(
+  output: string | Array<{ name: string; args: unknown }>,
+  pause?: Promise<void>,
+) {
+  const encoder = new TextEncoder();
+  return new Response(
+    new ReadableStream({
+      async start(controller) {
+        const send = (delta: object, finishReason: string | null = null) => {
+          const chunk = {
+            id: "test-completion",
+            object: "chat.completion.chunk",
+            created: 1,
+            model: "test/model",
+            choices: [{ index: 0, finish_reason: finishReason, delta }],
+          };
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
+          );
+        };
+        send({ role: "assistant" });
+        if (typeof output === "string") {
+          const split = pause ? output.indexOf("\\udc31") : output.length;
+          send({ content: output.slice(0, split) });
+          if (pause) {
+            await pause;
+            send({ content: output.slice(split) });
+          }
+        } else {
+          send({
+            tool_calls: output.map(({ name, args }, index) => ({
+              index,
+              id: `call_${index}`,
+              type: "function",
+              function: { name, arguments: JSON.stringify(args) },
+            })),
+          });
+        }
+        send({}, typeof output === "string" ? "stop" : "tool_calls");
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
       },
-    ],
-    usage: { prompt_tokens: 10, completion_tokens: 10, total_tokens: 20 },
-  });
+    }),
+    { headers: { "Content-Type": "text/event-stream" } },
+  );
 }
 
 afterEach(() => {
@@ -59,7 +81,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-it("reads one image, matches authenticated catalog entries, and applies a later chat correction without re-uploading it", async () => {
+it("streams the receipt reply before the draft is complete and applies later corrections without re-uploading the image", async () => {
   vi.stubEnv("OPENROUTER_API_KEY", "test-key");
   vi.stubEnv("OPENROUTER_RECEIPT_MODEL", "test/model");
   vi.stubEnv("LANGSMITH_TRACING", "true");
@@ -81,6 +103,10 @@ it("reads one image, matches authenticated catalog entries, and applies a later 
   });
   const modelRequests: string[] = [];
   const requestBodies: string[] = [];
+  let releaseDraft: (() => void) | undefined;
+  const remainingDraft = new Promise<void>((resolve) => {
+    releaseDraft = resolve;
+  });
   vi.stubGlobal("fetch", async (resource: string, init: RequestInit) => {
     if (resource === "/api/receipt-agent") {
       requestBodies.push(String(init.body));
@@ -94,30 +120,36 @@ it("reads one image, matches authenticated catalog entries, and applies a later 
     expect(resource).toBe("https://openrouter.ai/api/v1/chat/completions");
     modelRequests.push(String(init.body));
     const payload = JSON.parse(String(init.body)) as {
+      stream: boolean;
       tools: Array<{ function: { name: string } }>;
     };
-    const responseTool = payload.tools.find(
-      ({ function: { name } }) => !name.startsWith("list_"),
-    );
-    if (!responseTool) throw new Error("Missing structured response tool");
+    expect(payload.stream).toBe(true);
+    expect(payload.tools.map(({ function: { name } }) => name)).toEqual([
+      "list_shops",
+      "list_payment_subtypes",
+      "list_shop_categories",
+    ]);
     if (modelRequests.length === 1) {
       return modelResponse([
         { name: "list_shops", args: { search: "Market", offset: 0 } },
         { name: "list_payment_subtypes", args: { search: null, offset: 0 } },
       ]);
     }
-    return modelResponse([
-      {
-        name: responseTool.function.name,
-        args:
-          modelRequests.length === 2
-            ? { reply: "Review your receipt.", draft }
-            : {
-                reply: "Updated the receipt date.",
-                draft: { ...draft, date: "2026-11-25" },
-              },
-      },
-    ]);
+    if (modelRequests.length === 2) {
+      return modelResponse(
+        JSON.stringify({ reply: '收據 "茶" 🐱。', draft }).replace(
+          "🐱",
+          "\\ud83d\\udc31",
+        ),
+        remainingDraft,
+      );
+    }
+    return modelResponse(
+      JSON.stringify({
+        draft: { ...draft, date: "2026-11-25" },
+        reply: "Updated the receipt date.",
+      }),
+    );
   });
 
   const threadId = crypto.randomUUID();
@@ -130,7 +162,8 @@ it("reads one image, matches authenticated catalog entries, and applies a later 
     role: "user",
     text: "Read my receipt",
   };
-  const first = await runReceiptTurn({
+  const onReply = vi.fn();
+  const firstRun = runReceiptTurn({
     threadId,
     history: [],
     message: upload,
@@ -138,7 +171,26 @@ it("reads one image, matches authenticated catalog entries, and applies a later 
     draft: null,
     locale: "en",
     abortController: new AbortController(),
+    onReply,
   });
+  void firstRun.catch(() => undefined);
+  try {
+    await vi.waitFor(() =>
+      expect(onReply).toHaveBeenCalledWith({
+        id: expect.any(String),
+        role: "assistant",
+        text: '收據 "茶" ',
+      }),
+    );
+  } finally {
+    releaseDraft?.();
+  }
+  const first = await firstRun;
+  expect(onReply.mock.calls.map(([reply]) => reply.text)).toEqual([
+    '收據 "茶" ',
+    '收據 "茶" 🐱。',
+  ]);
+  expect(onReply.mock.lastCall?.[0]).toEqual(first.reply);
   expect(first.state.viewerId).toBe(payer);
   expect(first.state.draft?.shopId).toBe(shop);
   expect(first.state.draft?.lines[0].subtypeId).toBe(food);
@@ -165,6 +217,44 @@ it("reads one image, matches authenticated catalog entries, and applies a later 
   expect(edited.reply.text).toBe("Updated the receipt date.");
   expect(requestBodies[1]).not.toContain(image.data);
   expect(modelRequests[2]).not.toContain(image.data);
+});
+
+it("reports a failed run when the draft JSON is cut off after the reply", async () => {
+  vi.stubEnv("OPENROUTER_API_KEY", "test-key");
+  vi.stubEnv("OPENROUTER_RECEIPT_MODEL", "test/model");
+  vi.stubGlobal("fetch", async (resource: string, init: RequestInit) => {
+    if (resource === "/api/receipt-agent")
+      return POST(
+        new NextRequest(`http://localhost${resource}`, {
+          ...init,
+          signal: init.signal ?? undefined,
+        }),
+      );
+    expect(resource).toBe("https://openrouter.ai/api/v1/chat/completions");
+    return modelResponse('{"reply":"Here is the updated draft.","draft":');
+  });
+
+  const onReply = vi.fn();
+  await expect(
+    runReceiptTurn({
+      threadId: crypto.randomUUID(),
+      history: [],
+      message: {
+        id: crypto.randomUUID(),
+        role: "user",
+        text: "Update the draft",
+      },
+      draft: null,
+      locale: "en",
+      abortController: new AbortController(),
+      onReply,
+    }),
+  ).rejects.toThrow("receipt_run_failed");
+  expect(onReply).toHaveBeenCalledWith({
+    id: expect.any(String),
+    role: "assistant",
+    text: "Here is the updated draft.",
+  });
 });
 
 it.each([

@@ -52,6 +52,19 @@ export function POST(request: NextRequest) {
           runId,
           protocolVersion: PROTOCOL_VERSION,
         });
+        const messageId = crypto.randomUUID();
+        let streamedReply = "";
+        const sendReplyDelta = (delta: string) => {
+          if (!delta) return;
+          if (!streamedReply)
+            send({
+              type: EventType.TEXT_MESSAGE_START,
+              messageId,
+              role: "assistant",
+            });
+          send({ type: EventType.TEXT_MESSAGE_CONTENT, messageId, delta });
+          streamedReply += delta;
+        };
         try {
           const result = await runReceiptAgent(
             supabase,
@@ -59,18 +72,11 @@ export function POST(request: NextRequest) {
             state.draft,
             state.locale,
             signal,
+            sendReplyDelta,
           );
-          const messageId = crypto.randomUUID();
-          send({
-            type: EventType.TEXT_MESSAGE_START,
-            messageId,
-            role: "assistant",
-          });
-          send({
-            type: EventType.TEXT_MESSAGE_CONTENT,
-            messageId,
-            delta: result.reply,
-          });
+          signal.throwIfAborted();
+          if (!result.reply.startsWith(streamedReply)) throw new ApiError(502);
+          sendReplyDelta(result.reply.slice(streamedReply.length));
           send({ type: EventType.TEXT_MESSAGE_END, messageId });
           send({
             type: EventType.STATE_SNAPSHOT,

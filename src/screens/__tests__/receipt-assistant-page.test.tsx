@@ -3,7 +3,7 @@ import type { runReceiptTurn } from "@/lib/receipt-client";
 import { openReceiptPhoto, prepareReceiptImage } from "@/lib/receipt-image";
 import { ReceiptAssistantPage } from "@/screens/receipt-assistant-page";
 import type { ReceiptSessionStore } from "@/store/receipt.store";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useStore } from "zustand";
@@ -71,7 +71,6 @@ beforeEach(() => {
     encodedSizes.push([this.width, this.height]);
     callback(new Blob(["cropped image"], { type: "image/jpeg" }));
   });
-  HTMLElement.prototype.scrollIntoView = vi.fn();
 });
 
 afterEach(() => {
@@ -98,9 +97,20 @@ function recognized(date: string): Awaited<ReturnType<typeof runReceiptTurn>> {
   };
 }
 
-it("keeps the original local until recognition and sends a rotated image within 1000 pixels", async () => {
+it("uploads the cropped receipt and replaces the waiting text in the same reply bubble", async () => {
   const user = userEvent.setup();
-  recognize.mockResolvedValue(recognized("2026-11-24"));
+  const result = recognized("2026-11-24");
+  let finish:
+    | ((result: Awaited<ReturnType<typeof runReceiptTurn>>) => void)
+    | undefined;
+  let startReply: (() => void) | undefined;
+  const completion = new Promise<typeof result>((resolve) => {
+    finish = resolve;
+  });
+  recognize.mockImplementation(({ onReply }) => {
+    startReply = () => onReply?.({ ...result.reply, text: "Review your" });
+    return completion;
+  });
   render(<ReceiptAssistantPage />);
 
   await user.upload(
@@ -116,6 +126,18 @@ it("keeps the original local until recognition and sends a rotated image within 
   expect(recognize).not.toHaveBeenCalled();
 
   await user.click(screen.getByRole("button", { name: "Read receipt" }));
+  const waiting = await screen.findByText("Reviewing your receipt");
+  const replyBubble = waiting.closest("li");
+  expect(replyBubble).toHaveTextContent("Reviewing your receipt...");
+  await act(async () => startReply?.());
+  expect(screen.getByText("Review your").closest("li")).toBe(replyBubble);
+  expect(waiting).not.toBeInTheDocument();
+  expect(screen.queryByText("Draft for 2026-11-24")).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("textbox", { name: "Message to the receipt assistant" }),
+  ).toBeDisabled();
+  await act(async () => finish?.(result));
+  expect(screen.getByText(result.reply.text).closest("li")).toBe(replyBubble);
   expect(await screen.findByText("Draft for 2026-11-24")).toBeVisible();
   expect(encodedSizes).toEqual([[1000, 400]]);
   expect(recognize).toHaveBeenCalledOnce();
@@ -140,9 +162,22 @@ it("isolates the selected source rectangle before rotating and keeps a smaller c
 
 it("keeps the old draft through a cancelled or failed replacement and retries the local crop", async () => {
   const user = userEvent.setup();
+  let fail: ((reason: Error) => void) | undefined;
+  const failedRun = new Promise<Awaited<ReturnType<typeof runReceiptTurn>>>(
+    (_, reject) => {
+      fail = reject;
+    },
+  );
   recognize
     .mockResolvedValueOnce(recognized("2026-11-24"))
-    .mockRejectedValueOnce(new Error("connection lost"))
+    .mockImplementationOnce(({ onReply }) => {
+      onReply?.({
+        id: "unfinished",
+        role: "assistant",
+        text: "Reading the replacement",
+      });
+      return failedRun;
+    })
     .mockResolvedValueOnce(recognized("2026-11-25"));
   render(<ReceiptAssistantPage />);
   const picker = screen.getByLabelText("Choose receipt photo");
@@ -163,9 +198,13 @@ it("keeps the old draft through a cancelled or failed replacement and retries th
 
   await user.upload(picker, replacement);
   await user.click(await screen.findByRole("button", { name: "Read receipt" }));
+  expect(await screen.findByText("Reading the replacement")).toBeVisible();
+  expect(screen.getByText("Draft for 2026-11-24")).toBeVisible();
+  await act(async () => fail?.(new Error("connection lost")));
   const retry = await screen.findByRole("button", {
     name: "Retry reading new.png",
   });
+  expect(screen.queryByText("Reading the replacement")).not.toBeInTheDocument();
   expect(screen.getByText("Draft for 2026-11-24")).toBeVisible();
   await user.click(retry);
   expect(await screen.findByText("Draft for 2026-11-25")).toBeVisible();

@@ -13,6 +13,7 @@ type ReceiptSession = {
   viewerId: string | null;
   payeeId: string | null;
   messages: ReceiptMessage[];
+  pendingReply: ReceiptMessage | null;
   running: boolean;
   updateDraft: (change: (draft: ReceiptDraft) => ReceiptDraft) => void;
 };
@@ -26,6 +27,7 @@ export function createReceiptSession() {
     viewerId: null,
     payeeId: null,
     messages: [],
+    pendingReply: null,
     running: false,
     updateDraft: (change) =>
       set((state) => (state.draft ? { draft: change(state.draft) } : state)),
