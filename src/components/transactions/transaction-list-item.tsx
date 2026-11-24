@@ -1,9 +1,9 @@
+import { ChevronDown, Loader2, Pencil, Trash2 } from "lucide-react";
 /**
  * TransactionListItem — single row in the transaction list.
  * Clicking the row toggles an expandable details panel showing payment breakdown.
  */
-import { useNavigate } from "@tanstack/react-router";
-import { ChevronDown, Loader2, Pencil, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -26,7 +26,7 @@ function TransactionListItem({
   isDeleting,
 }: TransactionListItemProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -120,10 +120,7 @@ function TransactionListItem({
               className="size-7 text-muted-foreground hover:text-foreground"
               onClick={(e) => {
                 e.stopPropagation();
-                void navigate({
-                  to: "/main/transactions/$txId/edit",
-                  params: { txId: transaction.id },
-                });
+                router.push(`/main/transactions/${transaction.id}/edit`);
               }}
             >
               <Pencil className="size-3.5" />

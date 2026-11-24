@@ -6,7 +6,7 @@
 export interface ShopCategoryRow {
   id: string;
   name: string;
-  created_at: string;
+  created_at: string | null;
 }
 
 export interface ShopRow {
@@ -14,27 +14,27 @@ export interface ShopRow {
   name: string;
   shop_category_id: string;
   logo: string;
-  created_at: string;
+  created_at: string | null;
 }
 
 export interface PaymentTypeRow {
   id: string;
   name: string;
-  created_at: string;
+  created_at: string | null;
 }
 
 export interface PaymentSubtypeRow {
   id: string;
   name: string;
   payment_type_id: string;
-  created_at: string;
+  created_at: string | null;
 }
 
 export interface ProfileRow {
   id: string;
   user_id: string;
   display_name: string | null;
-  created_at: string;
+  created_at: string | null;
 }
 
 export interface TransactionRow {
@@ -44,7 +44,7 @@ export interface TransactionRow {
   payee_id: string;
   price: number;
   remark: string | null;
-  created_at: string;
+  created_at: string | null;
 }
 
 export interface TransactionItemRow {
@@ -52,7 +52,7 @@ export interface TransactionItemRow {
   transaction_id: string;
   payment_subtype_id: string;
   price: number;
-  created_at: string;
+  created_at: string | null;
 }
 
 /** Joined transaction with shop + items for list display. */

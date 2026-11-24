@@ -1,48 +1,26 @@
-/**
- * TanStack Query hooks for meta-data CRUD.
- * Provides generic list / create / update / delete hooks
- * plus type-specific wrappers with correct select queries.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { z } from "zod";
 
-import { supabase } from "@/lib/supabase";
-import type {
-  PaymentSubtypeRow,
-  PaymentTypeRow,
-  ShopCategoryRow,
-  ShopRow,
-} from "@/types/database";
+import { apiFetch } from "@/lib/api";
+import {
+  paymentSubtypeRowSchema,
+  paymentTypeRowSchema,
+  shopCategoryRowSchema,
+  shopRowSchema,
+} from "@/schemas/api.schema";
 
-/* ------------------------------------------------------------------ */
-/*  Generic CRUD hooks                                                */
-/* ------------------------------------------------------------------ */
-
-function useMetaList<T>(table: string, selectQuery = "*") {
+function useMetaList<T>(table: string, schema: z.ZodType<T>) {
   return useQuery({
     queryKey: ["meta", table],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from(table)
-        .select(selectQuery)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as T[];
-    },
+    queryFn: () => apiFetch(`/api/meta/${table}`, schema.array()),
   });
 }
 
 function useCreateMeta(table: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (values: Record<string, unknown>) => {
-      const { data, error } = await supabase
-        .from(table)
-        .insert(values)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
+    mutationFn: (body: Record<string, unknown>) =>
+      apiFetch(`/api/meta/${table}`, z.null(), { method: "POST", body }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["meta", table] });
     },
@@ -52,19 +30,11 @@ function useCreateMeta(table: string) {
 function useUpdateMeta(table: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      id,
-      ...values
-    }: { id: string } & Record<string, unknown>) => {
-      const { data, error } = await supabase
-        .from(table)
-        .update(values)
-        .eq("id", id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
+    mutationFn: ({ id, ...body }: { id: string } & Record<string, unknown>) =>
+      apiFetch(`/api/meta/${table}?id=${encodeURIComponent(id)}`, z.null(), {
+        method: "PATCH",
+        body,
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["meta", table] });
     },
@@ -74,58 +44,37 @@ function useUpdateMeta(table: string) {
 function useDeleteMeta(table: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from(table).delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: (id: string) =>
+      apiFetch(`/api/meta/${table}?id=${encodeURIComponent(id)}`, z.null(), {
+        method: "DELETE",
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["meta", table] });
     },
   });
 }
 
-/* ------------------------------------------------------------------ */
-/*  Type-specific wrappers                                            */
-/* ------------------------------------------------------------------ */
-
 export function useShopCategories() {
-  return useMetaList<ShopCategoryRow>("shop_categories");
+  return useMetaList("shop_categories", shopCategoryRowSchema);
 }
 
-/** Shops with the joined shop_category name. */
 export function useShops() {
-  return useMetaList<ShopRow & { shop_categories: { name: string } | null }>(
-    "shops",
-    "*, shop_categories(name)",
-  );
+  return useMetaList("shops", shopRowSchema);
 }
 
 export function usePaymentTypes() {
-  return useMetaList<PaymentTypeRow>("payment_types");
+  return useMetaList("payment_types", paymentTypeRowSchema);
 }
 
-/** Payment subtypes with the joined payment_type name. */
 export function usePaymentSubtypes() {
-  return useMetaList<
-    PaymentSubtypeRow & { payment_types: { name: string } | null }
-  >("payment_subtypes", "*, payment_types(name)");
+  return useMetaList("payment_subtypes", paymentSubtypeRowSchema);
 }
 
-/**
- * Uploads a logo file to the "shop-logos" Supabase Storage bucket.
- * Returns the public URL of the uploaded file.
- */
-export async function uploadShopLogo(file: File): Promise<string> {
-  const ext = file.name.split(".").pop() ?? "png";
-  const fileName = `${crypto.randomUUID()}.${ext}`;
-  const { data, error } = await supabase.storage
-    .from("shop-logos")
-    .upload(fileName, file);
-  if (error) throw error;
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from("shop-logos").getPublicUrl(data.path);
-  return publicUrl;
+/** Uploads a logo through the app and returns its same-origin display URL. */
+export function uploadShopLogo(file: File) {
+  const body = new FormData();
+  body.set("file", file);
+  return apiFetch("/api/shop-logos", z.string(), { method: "POST", body });
 }
 
 export { useCreateMeta, useDeleteMeta, useUpdateMeta };

@@ -72,6 +72,7 @@
       "totalPrice": "Total",
       "editTitle": "Edit Transaction",
       "notFound": "Transaction not found",
+      "saveError": "Could not save the transaction. Please try again.",
       "save": "Save",
       "submit": "Create Transaction",
       "submitting": "Creating...",
@@ -106,6 +107,7 @@
     "empty": "No items found",
     "language": "Language",
     "logout": "Logout",
+    "logoutError": "Could not sign out. Please try again.",
     "form": {
       "name": "Name",
       "namePlaceholder": "Enter name",
@@ -119,6 +121,7 @@
       "paymentType": "Payment Type",
       "paymentTypePlaceholder": "Select payment type",
       "paymentTypeRequired": "Payment type is required",
+      "saveError": "Could not save. Please try again.",
       "save": "Save",
       "cancel": "Cancel"
     }

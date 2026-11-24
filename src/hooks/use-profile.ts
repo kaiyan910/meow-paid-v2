@@ -1,11 +1,8 @@
-/**
- * TanStack Query hooks for user profile CRUD.
- * Fetches and updates the current user's profile row.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { supabase } from "@/lib/supabase";
-import type { ProfileRow } from "@/types/database";
+import { apiFetch } from "@/lib/api";
+import { profileRowSchema } from "@/schemas/api.schema";
+import type { ProfileFormValues } from "@/schemas/profile.schema";
 
 const PROFILE_KEY = ["profile"] as const;
 
@@ -13,35 +10,15 @@ const PROFILE_KEY = ["profile"] as const;
 export function useProfile() {
   return useQuery({
     queryKey: PROFILE_KEY,
-    queryFn: async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-      if (error) throw error;
-      return data as ProfileRow;
-    },
+    queryFn: () => apiFetch("/api/profile", profileRowSchema),
   });
 }
 
-/** Fetches all profiles (for payee dropdown). */
+/** Fetches the profiles available for the payee dropdown. */
 export function useProfiles() {
   return useQuery({
     queryKey: ["profiles"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("display_name");
-      if (error) throw error;
-      return data as ProfileRow[];
-    },
+    queryFn: () => apiFetch("/api/profile?list=1", profileRowSchema.array()),
   });
 }
 
@@ -49,23 +26,11 @@ export function useProfiles() {
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (values: { display_name: string | null }) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .update(values)
-        .eq("user_id", user.id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as ProfileRow;
-    },
+    mutationFn: (body: ProfileFormValues) =>
+      apiFetch("/api/profile", profileRowSchema, { method: "PATCH", body }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: PROFILE_KEY });
+      void queryClient.invalidateQueries({ queryKey: ["profiles"] });
     },
   });
 }

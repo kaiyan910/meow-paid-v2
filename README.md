@@ -15,9 +15,8 @@ A shared expense tracking and settlement application for splitting costs among m
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | React 19 + Vite |
+| Framework | Next.js App Router + React 19 |
 | Language | TypeScript |
-| Routing | TanStack Router |
 | Data Fetching | TanStack Query |
 | Forms | TanStack Form |
 | State Management | Zustand |
@@ -46,14 +45,13 @@ cd MeowPaid_v2
 pnpm install
 ```
 
-### Environment Variables
+### Supabase setup
 
-Create a `.env` file in the project root:
+Copy `.env.example` to `.env.local` and set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` to your project URL and publishable key or legacy anon key. The server also reads the old `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY` names for existing local setups.
 
-```env
-VITE_SUPABASE_URL=<your-supabase-project-url>
-VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=<your-supabase-anon-key>
-```
+For an existing database, apply [migration 006](docs/migrations/006-atomic-transaction-writes.sql) before using the new transaction create and edit endpoints. For a new database, apply the [migrations](docs/migrations) in numeric order and set up the public `shop-logos` bucket with authenticated upload permissions.
+
+The browser calls MeowPaid's own API. Supabase Auth sessions are stored in HTTP-only cookies and data requests run under each signed-in user's existing RLS permissions. Existing users sign in once after switching from the Vite app.
 
 ### Development
 
@@ -61,10 +59,11 @@ VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=<your-supabase-anon-key>
 pnpm dev
 ```
 
-### Build
+### Production build
 
 ```bash
 pnpm build
+pnpm start
 ```
 
 ### Testing
@@ -86,32 +85,18 @@ pnpm format        # Format only
 
 ```
 src/
-├── components/
-│   ├── ui/              # Shadcn UI primitives
-│   ├── transactions/    # Transaction list & form components
-│   ├── statistics/      # Charts and stat cards
-│   └── meta/            # Meta data management components
-├── pages/
-│   ├── login-page.tsx
-│   ├── main-page.tsx    # Protected layout shell
-│   ├── create-transaction-page.tsx
-│   ├── edit-transaction-page.tsx
-│   └── tabs/            # Tab content (transactions, statistics, transfer, meta)
-├── hooks/               # TanStack Query hooks for data fetching
-├── store/               # Zustand stores (auth, meta, transaction, transfer)
-├── schemas/             # Zod validation schemas
-├── types/               # TypeScript type definitions
-├── i18n/                # i18next config and locale files (en, zh)
-└── lib/                 # Supabase client and utilities
+├── app/                 # Next.js pages, layouts, API routes, and PWA manifest
+├── components/          # Shared UI, forms, and charts
+├── screens/             # Login, protected shell, and tab views
+├── hooks/               # TanStack Query hooks for the app API
+├── lib/server/          # Supabase session, database, and storage helpers
+├── schemas/             # Zod validation for UI and API contracts
+└── i18n/                # English and Traditional Chinese translations
 ```
 
 ## Deployment
 
-The app deploys to **GitHub Pages** via GitHub Actions on push to `main`. The workflow runs tests, builds the app, and deploys automatically.
-
-Required GitHub environment variables:
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY`
+GitHub Actions runs lint, tests, and a production build. Deploy the app to a Next.js host or a Node.js server running `pnpm start` behind HTTPS. Configure the Supabase environment variables on that server. The previous GitHub Pages site uses static hosting, so moving `mpv2.crookk.com` to this build requires pointing it at the Node.js deployment.
 
 ## License
 

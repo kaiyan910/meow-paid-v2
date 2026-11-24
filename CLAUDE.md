@@ -1,7 +1,7 @@
 ## Tech Stack
 
 ### Frontend
-- React 19 with vite
+- Next.js App Router with React 19
 - use biome.js for the code quality check
 - use pnpm instead of npm
 
@@ -17,7 +17,7 @@
 - never put a <Button> inside another <Button>
 
 #### Libraries
-- Tanstack Router for the navigation
+- Next.js file-system routing for navigation
 - Tanstack Query for the API call if needed
 - Tanstack Form for the form builder
 - Tanstack Table for the datatable implementation
@@ -42,7 +42,7 @@
 - supabase-postgres-best-pratices: for Supabase Postgres best practice
 
 ### Backend
-- Supabase as the backbone
+- Use request-scoped Supabase clients from `src/lib/server`. Verify identity at each data endpoint and execute queries as the signed-in user so Supabase RLS applies. Client components call same-origin Next.js routes under `src/app/api`. See `README.md` for runtime configuration and migrations.
 
 ### Change Logs
 - important! always save you work log to `docs/ai-worklog` in name format `YYYY-MM-DD-[bugfix|new|revision]-task-name.md`

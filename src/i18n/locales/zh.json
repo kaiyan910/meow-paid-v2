@@ -72,6 +72,7 @@
       "totalPrice": "合計",
       "editTitle": "編輯交易",
       "notFound": "找不到交易記錄",
+      "saveError": "未能儲存交易，請再試一次。",
       "save": "儲存",
       "submit": "建立交易",
       "submitting": "建立中...",
@@ -106,6 +107,7 @@
     "empty": "暫無資料",
     "language": "語言",
     "logout": "登出",
+    "logoutError": "未能登出，請再試一次。",
     "form": {
       "name": "名稱",
       "namePlaceholder": "輸入名稱",
@@ -119,6 +121,7 @@
       "paymentType": "付款類型",
       "paymentTypePlaceholder": "選擇付款類型",
       "paymentTypeRequired": "付款類型為必填",
+      "saveError": "未能儲存，請再試一次。",
       "save": "儲存",
       "cancel": "取消"
     }

@@ -10,29 +10,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 /*  Mocks                                                              */
 /* ------------------------------------------------------------------ */
 
-/** Mock Supabase signInWithPassword */
-const mockSignInWithPassword = vi.fn();
-vi.mock("@/lib/supabase", () => ({
-  supabase: {
-    auth: {
-      signInWithPassword: (...args: unknown[]) =>
-        mockSignInWithPassword(...args),
-    },
-  },
+/** Mock the app API and Next.js navigation. */
+const mockSignIn = vi.fn();
+vi.mock("@/lib/api", () => ({
+  apiFetch: (...args: unknown[]) => mockSignIn(...args),
 }));
 
-/** Mock TanStack Router navigate */
-const mockNavigate = vi.fn();
-vi.mock("@tanstack/react-router", () => ({
-  useNavigate: () => mockNavigate,
-}));
-
-/** Mock auth store */
-const mockSetUser = vi.fn();
-vi.mock("@/store/auth.store", () => ({
-  useAuthStore: (
-    selector: (state: { setUser: typeof mockSetUser }) => unknown,
-  ) => selector({ setUser: mockSetUser }),
+const mockReplace = vi.fn();
+const mockRefresh = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: mockReplace, refresh: mockRefresh }),
 }));
 
 /** Mock react-i18next to return translation keys as-is */
@@ -161,12 +148,8 @@ describe("LoginForm", () => {
   /* ---- Form submission ---- */
 
   describe("form submission", () => {
-    it("calls supabase signIn and navigates on success", async () => {
-      const fakeUser = { id: "123", email: "user@example.com" };
-      mockSignInWithPassword.mockResolvedValue({
-        data: { user: fakeUser },
-        error: null,
-      });
+    it("signs in through the app API and navigates on success", async () => {
+      mockSignIn.mockResolvedValue(null);
 
       const user = userEvent.setup();
       renderLoginForm();
@@ -176,23 +159,24 @@ describe("LoginForm", () => {
       await user.click(screen.getByRole("button", { name: /access system/i }));
 
       await waitFor(() => {
-        expect(mockSignInWithPassword).toHaveBeenCalledWith({
-          email: "user@example.com",
-          password: "password123",
-        });
+        expect(mockSignIn).toHaveBeenCalledWith(
+          "/api/auth",
+          expect.anything(),
+          {
+            method: "POST",
+            body: { email: "user@example.com", password: "password123" },
+          },
+        );
       });
 
       await waitFor(() => {
-        expect(mockSetUser).toHaveBeenCalledWith(fakeUser);
-        expect(mockNavigate).toHaveBeenCalledWith({ to: "/main" });
+        expect(mockReplace).toHaveBeenCalledWith("/main/transactions");
+        expect(mockRefresh).toHaveBeenCalled();
       });
     });
 
-    it("displays auth error when supabase returns an error", async () => {
-      mockSignInWithPassword.mockResolvedValue({
-        data: { user: null },
-        error: { message: "Invalid credentials" },
-      });
+    it("displays the login error when the app API rejects", async () => {
+      mockSignIn.mockRejectedValue(new Error("Invalid credentials"));
 
       const user = userEvent.setup();
       renderLoginForm();
@@ -207,8 +191,7 @@ describe("LoginForm", () => {
         ).toBeInTheDocument();
       });
 
-      expect(mockSetUser).not.toHaveBeenCalled();
-      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(mockReplace).not.toHaveBeenCalled();
     });
   });
 });

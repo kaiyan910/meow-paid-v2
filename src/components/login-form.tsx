@@ -1,11 +1,11 @@
 /**
- * LoginForm — handles email/password authentication against Supabase.
+ * LoginForm — handles email/password authentication through the app API.
  * Built with TanStack Form for state management and Zod for field-level
  * real-time validation. Displays inline errors as the user types.
  */
 import { useForm } from "@tanstack/react-form";
-import { useNavigate } from "@tanstack/react-router";
 import { KeyRound, Loader2, Mail } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -20,32 +20,27 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/lib/supabase";
+import { apiFetch } from "@/lib/api";
 import { loginSchema } from "@/schemas/auth.schema";
-import { useAuthStore } from "@/store/auth.store";
+import { z } from "zod";
 
 function LoginForm() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const setUser = useAuthStore((s) => s.setUser);
+  const router = useRouter();
   const [authError, setAuthError] = useState<string | null>(null);
 
   const form = useForm({
     defaultValues: { email: "", password: "" },
     onSubmit: async ({ value }) => {
       setAuthError(null);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: value.email,
-        password: value.password,
-      });
-      if (error) {
+      try {
+        await apiFetch("/api/auth", z.null(), { method: "POST", body: value });
+      } catch {
         setAuthError(t("login.error"));
         return;
       }
-      if (data.user) {
-        setUser(data.user);
-        void navigate({ to: "/main" });
-      }
+      router.replace("/main/transactions");
+      router.refresh();
     },
   });
 
@@ -154,7 +149,7 @@ function LoginForm() {
             )}
           </form.Field>
 
-          {/* Supabase auth error */}
+          {/* Sign-in error */}
           {authError && (
             <p className="text-xs text-destructive text-center">{authError}</p>
           )}

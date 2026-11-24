@@ -3,8 +3,8 @@
  * Uses TanStack Form with Zod validation for type-safe form management.
  */
 import { useForm } from "@tanstack/react-form";
-import { useNavigate } from "@tanstack/react-router";
 import { CalendarIcon, Loader2, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -57,13 +57,15 @@ function TransactionForm({
   isPending,
 }: TransactionFormProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const router = useRouter();
   const profiles = useProfiles();
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [saveError, setSaveError] = useState(false);
 
   const form = useForm({
     defaultValues,
     onSubmit: async ({ value }) => {
+      setSaveError(false);
       // Parse string prices to numbers and build the submission payload
       const parsedItems = value.items
         .map((item) => ({
@@ -89,8 +91,13 @@ function TransactionForm({
       const parsed = transactionSchema.safeParse(payload);
       if (!parsed.success) return;
 
-      await onSubmit(parsed.data);
-      void navigate({ to: "/main/transactions" });
+      try {
+        await onSubmit(parsed.data);
+      } catch {
+        setSaveError(true);
+        return;
+      }
+      router.push("/main/transactions");
     },
   });
 
@@ -350,13 +357,19 @@ function TransactionForm({
           )}
         </form.Field>
 
+        {saveError && (
+          <p role="alert" className="text-xs text-destructive">
+            {t("transactions.form.saveError")}
+          </p>
+        )}
+
         {/* Actions */}
         <div className="flex gap-2 pt-2">
           <Button
             type="button"
             variant="outline"
             className="flex-1 border-2"
-            onClick={() => void navigate({ to: "/main/transactions" })}
+            onClick={() => router.push("/main/transactions")}
           >
             {t("transactions.form.cancel")}
           </Button>
@@ -366,7 +379,7 @@ function TransactionForm({
             {([canSubmit, isSubmitting]) => (
               <Button
                 type="submit"
-                disabled={!canSubmit || isPending}
+                disabled={!canSubmit || isPending || isSubmitting}
                 className="flex-1 border-2"
               >
                 {(isPending || isSubmitting) && (

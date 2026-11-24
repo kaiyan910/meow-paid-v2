@@ -1,7 +1,7 @@
 /**
  * MetaFormDialog — create / edit dialog for any meta type.
  * Renders a TanStack Form whose fields adapt to the active MetaType.
- * Validates with Zod before submitting to Supabase via TanStack Query.
+ * Validates with Zod before submitting through the app API.
  *
  * Shop logo is uploaded to Supabase Storage; its public URL is stored in the DB.
  */
@@ -115,31 +115,38 @@ function MetaFormDialog({
 
   // File upload state for shop logo
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [saveError, setSaveError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm({
     defaultValues: buildDefaults(editItem),
     onSubmit: async ({ value }) => {
-      const mutableValues = { ...value };
+      setSaveError(false);
+      try {
+        const mutableValues = { ...value };
 
-      // Upload logo file if a new one was selected
-      if (metaType === "shop" && logoFile) {
-        const url = await uploadShopLogo(logoFile);
-        mutableValues.logo = url;
-      }
+        // Upload logo file if a new one was selected
+        if (metaType === "shop" && logoFile) {
+          const url = await uploadShopLogo(logoFile);
+          mutableValues.logo = url;
+        }
 
-      const schema = SCHEMA_MAP[metaType];
-      const fields = extractFields(metaType, mutableValues);
-      const parsed = schema.safeParse(fields);
-      if (!parsed.success) return;
+        const schema = SCHEMA_MAP[metaType];
+        const fields = extractFields(metaType, mutableValues);
+        const parsed = schema.safeParse(fields);
+        if (!parsed.success) return;
 
-      if (isEdit && editItem?.id) {
-        await updateMutation.mutateAsync({
-          id: editItem.id as string,
-          ...parsed.data,
-        });
-      } else {
-        await createMutation.mutateAsync(parsed.data);
+        if (isEdit && editItem?.id) {
+          await updateMutation.mutateAsync({
+            id: editItem.id as string,
+            ...parsed.data,
+          });
+        } else {
+          await createMutation.mutateAsync(parsed.data);
+        }
+      } catch {
+        setSaveError(true);
+        return;
       }
       onOpenChange(false);
     },
@@ -150,10 +157,9 @@ function MetaFormDialog({
     if (open) {
       form.reset();
       setLogoFile(null);
+      setSaveError(false);
     }
   }, [open, form]);
-
-  const isPending = createMutation.isPending || updateMutation.isPending;
 
   /** Derive a display name from a logo URL or file. */
   const logoDisplayName = logoFile
@@ -348,6 +354,12 @@ function MetaFormDialog({
             </form.Field>
           )}
 
+          {saveError && (
+            <p role="alert" className="text-xs text-destructive">
+              {t("meta.form.saveError")}
+            </p>
+          )}
+
           <DialogFooter className="pt-2">
             <Button
               type="button"
@@ -357,10 +369,20 @@ function MetaFormDialog({
             >
               {t("meta.form.cancel")}
             </Button>
-            <Button type="submit" disabled={isPending} className="border-2">
-              {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-              {t("meta.form.save")}
-            </Button>
+            <form.Subscribe selector={(state) => state.isSubmitting}>
+              {(isSubmitting) => (
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="border-2"
+                >
+                  {isSubmitting && (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  )}
+                  {t("meta.form.save")}
+                </Button>
+              )}
+            </form.Subscribe>
           </DialogFooter>
         </form>
       </DialogContent>
